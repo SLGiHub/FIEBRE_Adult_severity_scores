@@ -1,5 +1,5 @@
 ---
-title: "FIEBRE Adult Severity Scores analysis: Figure and tables for manuscript"
+title: "FIEBRE Adult Severity Scores analysis: Figures and tables for manuscript"
 date: "`r format(Sys.Date(), '%d %B %Y')`   \n"
 output:
   officedown::rdocx_document:
@@ -101,9 +101,15 @@ set_flextable_defaults(
 ```{r global-options, include=FALSE}
 
 knitr::opts_chunk$set(fig.width = 7, fig.height = 5, dpi = 350, 
-                      fig.path = 'Figs/', fig.keep = 'all', 
+                      fig.path = 'figs/', fig.keep = 'all', 
                       echo = FALSE, warning = FALSE, message = FALSE,
-                      dev = "ragg_png"
+                      dev = "ragg_png",
+                      tab.cap.style = "",
+                      tab.cap.pre = "",
+                      tab.cap.sep = "",
+                      fig.cap.style = "",
+                      fig.cap.pre = "",
+                      fig.cap.sep = ""
                       )
 
 fp <- fp_par(
@@ -509,6 +515,7 @@ severity_data <- severity_data %>%
            ) 
 
 
+# Recode MEWs score variable
 
 severity_data <- severity_data %>%
   mutate(across(c(country, age_cat, sex, hiv_comb, cf_5_inpatient_outcome, cf_9_px_status_final, px_group, px_orient, outcome_d28, outcome_discharge, outcome_all, outcome_d28_label, altered_mental_status), as.factor)) %>%
@@ -516,6 +523,7 @@ severity_data <- severity_data %>%
          mews = if_else(mews == 0, 1, mews)) # set those with a MEWS of 0 to 1, currently only 2 patients have  MEWs of 0. 
 
 
+# Relevel factor variables
 
 relev_yndk <- function(f) forcats::fct_relevel(factor(f), "Yes", "No", "Don't know")
 relev_yn <- function(f) forcats::fct_relevel(factor(f), "Yes", "No")
@@ -526,7 +534,7 @@ severity_data$altered_mental_status <- relev_yn(severity_data$altered_mental_sta
 severity_data$hiv_comb <- relev_pos_neg(severity_data$hiv_comb)
 
 
-# Label dataset variables
+# Label dataset variables ----
 
 severity_data <- severity_data %>%
   sjlabelled::var_labels(
@@ -566,34 +574,6 @@ severity_data <- severity_data %>%
 ```
 
 ```{r data_summary, include = F, message = F, warning = F, paged.print = F, eval = T}
-
-summary((severity_data$mews))
-
-summary(as.factor(severity_data$outcome_d28))
-
-summary(as.factor(severity_data$outcome_inpatient))
-
-tabyl(severity_data, outcome_inpatient, outcome_d28) %>%
-  adorn_totals(where = "row")
-
-tabyl(severity_data, px_group, outcome_d28) %>%
-  adorn_totals(where = "row")
-
-summary(as.factor(severity_data$outcome_all))
-
-
-summary(as.factor(severity_data$cf_5_inpatient_outcome))
-summary(as.factor(severity_data$cf_9_px_status_final))
-summary(as.factor(severity_data$px_group))
-
-summary(as.factor(severity_data$outp_switched))
-
-
-summary(as.factor(severity_data$px_group))
-summary(as.factor(severity_data$country))
-summary(as.factor(severity_data$outcome_d28))
-summary(as.factor(severity_data$uva))
-
 
 #  1 - Day28 outcomes ----
 
@@ -693,166 +673,66 @@ summary(as.factor(severity_data_cc_d28$outp_switched))
 # severity_data$outp_switched
 
 
+
+severity_data_cc_d28 <- severity_data_cc_d28 %>%
+  sjlabelled::var_labels(
+                age = "Age (years)",
+                age_cat = "Age group",
+                sex = "Gender",
+                px_group = "Participant group",
+                temp = "Temperature (°C)",
+                hiv_comb = "HIV status",
+                respiratory_rate = "Respiratory rate (breaths/min)",
+                bp_systolic = "Systolic blood pressure, mm Hg",
+                bp_diastolic = "Diastolic blood pressure, mm Hg",
+                heart_rate = "Heart rate, beats/min",
+                o2_sats = "Oxygen saturation (%)",
+                mews = "Modified early warning score (MEWS)",
+                crb_65 = "CRB-65",
+                modGCS = "Modified GCS",
+                qsofa = "qSOFA score",
+                uva = "UVA score",
+                altered_mental_status = "Altered mental status \n (GCS <15)",
+                outcome_inpatient = "Inpatient outcome",
+                outcome_d28 = "Day 28 outcome",
+                outcome_all = "Outcomes",
+                px_group = "Patient group",
+                cf_9_px_status_final = "Day 28 outcome",
+                cf_5_inpatient_outcome = "Inpatient discharge outcome",
+                outcome_d28_label = "Day 28 outcome",
+                outcome_discharge = "In-hospital outcomes",
+                px_eyes = "While the participant is awake, do they open their eyes spontaneously?",
+                time_to_death = "Time to death (days)",
+                time_to_discharge = "Length of inpatient stay (days)",
+                hiv_comb = "HIV status",
+                outcome_discharge = "In hospital outcomes") 
+
+
+
 ```
    
    
    
 Table of Contents   
-   
+
 <!---BLOCK_TOC--->   
 
-<!---BLOCK_TOC{seq_id: 'tab'}--->   
-
-<!---BLOCK_TOC{seq_id: 'fig'}--->   
-   
 
 
 \newpage
 
 <!---BLOCK_LANDSCAPE_START--->
-
-
-## Participants recruited
-
-* These are patient outcomes reported at day 28 follow-up. 
-* Patient group (whether a patient is an outpatient or an inpatient) is defined at recruitment.   
-
-```{r eval=T, echo=F, message=FALSE, warning=FALSE, include=T, paged.print=FALSE, results='asis', tab.cap="Day 28 follow-up outcomes"}
-
-tbl_outcome_d28 <-
-  severity_data  %>%
-    select(px_group, country, outcome_d28_label, outcome_d28) %>%
-    tbl_summary(
-    by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("px_group",  "outcome_d28_label") ~ "{n} ({p}%)"),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-      add_stat_label() %>%
-      add_overall() %>%
-     modify_header(list(label ~"Variable")) %>%
-     as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-tbl_outcome_d28
-
-```
-
-
-
-\newpage
-
-* These are in-hospital patient outcomes. 
-
-```{r, tab.cap = "In-hospital outcomes",  include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-tbl_outcome_d0 <-
-  severity_data  %>%
-    select(px_group, country, outcome_discharge) %>%
-    tbl_summary(
-    by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("px_group",  "outcome_discharge") ~ "{n} ({p}%)"),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-      add_stat_label() %>%
-      add_overall() %>%
-     modify_header(list(label ~"Variable")) %>%
-     as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-tbl_outcome_d0
-
-```
-
-```{r, tab.cap = "In-hospital outcomes by patient group",  include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-tbl_outcome_d0_px_group <- severity_data %>%
-  tbl_cross(row = px_group, col = outcome_discharge, percent = "row") %>%
-   modify_header(list(label ~ "")) %>%
-  as_flex_table() %>%
-  flextable::fontsize(part = "header", size = 8)
-
-tbl_outcome_d0_px_group %>%
-  flextable::width(j = 1, width = 1) %>%
-  flextable::width(j=c(2,3,4,5,6,7,8), width = 0.7) 
-
-```
-\newpage
-
-Due to a small number of in-hospital deaths, this analysis is limited to outcomes at day 28.    
-* Total number of recruited adult patients: __`r total_px`__  
-* Number of patients _missing_ self-reported outcome (dead or alive) data at day 28 follow-up: __`r px_no_outcome`__.   
-    -   These were patients loss to follow-up at day 28 (__`r ltfu`__) and where no outcome data were reported at day 28 (__`r missing_day28`__).   
-* Number _missing_ severity score data: __`r px_no_sev_score`__.      
-* Patients with _complete_ self-reported outcome data at day 28 and _complete_ clinical data (complete cases): __`r total_px - px_no_outcome - px_no_sev_score`__   
-     
-     
-
-```{r, tab.cap = "Day 28 outcome by patient group",  include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-tbl_outcome_d28_px_group <-
-  severity_data_cc_d28 %>%
-  tbl_cross(row = px_group, col = outcome_d28, percent = "row") %>%
-   modify_header(list(label ~ "")) %>%
-  as_flex_table() %>%
-  flextable::fontsize(part = "header", size = 8)
-
-tbl_outcome_d28_px_group
-
-```
-
-<!---BLOCK_LANDSCAPE_STOP--->
-
 
 
 ## Descriptive results tables
 
-```{r tab.cap = "Demographic and clinical characteristics of patients with complete data at day 28", tab.id = "tbl_1a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-tbl_1a_d28 <- severity_data_cc_d28 %>%
-  select(age, age_cat, sex, px_group, time_to_discharge, temp, hiv_comb, respiratory_rate, bp_systolic, heart_rate, o2_sats, mews, modGCS, qsofa, uva, altered_mental_status, outcome_discharge) %>%
-  tbl_summary(
-    # by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("age", "temp", "time_to_discharge", "respiratory_rate", "bp_systolic", "heart_rate", "mews" ,"o2_sats", "modGCS", "uva") ~ 
-                     c("{median} ({p25}, {p75})", "{min}, {max}"),
-                     c("px_group",  "hiv_comb", "altered_mental_status", "outcome_discharge") ~ "{n} ({p}%)"),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-tbl_1a_d28
-
-
-```
-
-
-
-<!---BLOCK_LANDSCAPE_START--->
 
 ### Table 2 
-```{r tab.cap="Demographic and clinical characteristics of patients with complete data at day 28 follow-up, by site", eval=T, echo=F, message=FALSE, warning=FALSE, include=T, paged.print=FALSE, results='asis'}
+```{r tab.cap = "Demographic and clinical characteristics of febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe), who had complete enrolment and follow-up data", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
-tbl_1a_d28 <- severity_data_cc_d28 %>%
-  select(country, age, age_cat, sex, px_group, time_to_discharge, temp, hiv_comb, respiratory_rate, bp_systolic, heart_rate, o2_sats, mews, modGCS, qsofa, uva, altered_mental_status, outcome_discharge) %>%
+tbl_2 <- severity_data_cc_d28 %>%
+  select(country, age, age_cat, sex, px_group, time_to_discharge, temp, hiv_comb, respiratory_rate, bp_systolic, heart_rate, o2_sats, mews, modGCS, qsofa, uva, altered_mental_status) %>%
   tbl_summary(
     by = country,
     type = list(all_dichotomous() ~ "categorical",
@@ -860,27 +740,28 @@ tbl_1a_d28 <- severity_data_cc_d28 %>%
                 ),
     statistic = list(c("age", "temp", "time_to_discharge" , "respiratory_rate", "bp_systolic", "heart_rate", "mews" ,"o2_sats", "modGCS", "uva") ~ 
                      c("{median} ({p25}, {p75})", "{min}, {max}"),
-                     c("px_group", "age_cat", "hiv_comb", "altered_mental_status", "outcome_discharge") ~ "{n} ({p}%)"),
+                     c("px_group", "age_cat", "hiv_comb", "altered_mental_status") ~ "{n} ({p}%)"),
     digits = all_continuous() ~ 1,
     missing_text = "(Missing)",
       ) %>%
       add_overall(last = T) %>%
     add_stat_label() %>%
      modify_header(list(label ~"Variable")) %>%
+     modify_footnote(list(label ~ "IQR=interquartile range, bpm=beats per minute, brpm=breaths per minute, MEWS=modified early warning score, GCS=Glasgow coma scale score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score *Length of hospital stay reported for inpatients only")) %>%
     as_flex_table() %>%
       flextable::fontsize(part = "header", size = 8) %>%
       flextable::autofit()
 
-tbl_1a_d28
+tbl_2
 
 ```
 
 \newpage
 ### Table 3 
-```{r tab.cap = "Demographic and clinical characteristics of patients by day 28 outcome", tab.id = "tbl_2a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+```{r tab.cap = "Demographic and clinical characteristics of febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe), stratified by outcome by time of follow-up.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
-tbl_2a_d28 <- severity_data_cc_d28 %>%
+tbl_3 <- severity_data_cc_d28 %>%
   select(outcome_d28, age, age_cat, sex, px_group, time_to_discharge, country, temp, hiv_comb, respiratory_rate, bp_systolic, heart_rate, o2_sats, mews, modGCS, qsofa, uva, altered_mental_status, time_to_death, outcome_discharge) %>%
   tbl_summary(
     by = outcome_d28,
@@ -897,15 +778,12 @@ tbl_2a_d28 <- severity_data_cc_d28 %>%
     add_overall(last = T) %>%
     add_stat_label() %>%
      modify_header(list(label ~"Variable")) %>%
+    modify_footnote(list(label ~ "IQR=interquartile range, bpm=beats per minute, brpm=breaths per minute, MEWS=modified early warning score, GCS=Glasgow coma scale score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score *Length of hospital stay reported for inpatients only")) %>%
     as_flex_table() %>%
       flextable::fontsize(part = "header", size = 8) %>%
       flextable::autofit()
 
-tbl_2a_d28
-
-
-
-
+tbl_3
 
 # Increasing age and mortality trend
 
@@ -940,6 +818,7 @@ tbl3_age_death <- severity_data_cc_d28 %>%
   # rstatix::prop_trend_test()
 
 # Mortality and sex
+
 tbl3_sex_death <- severity_data_cc_d28 %>% 
   janitor::tabyl(sex, outcome_d28) %>%
   select(sex, Dead, Alive) %>%
@@ -967,107 +846,12 @@ severity_data_cc_d28 %>%
 
 ```
 
-```{r tab.cap = "Severity scores by site", tab.id = "tbl_2b", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-tbl_2b <- severity_data_cc_d28 %>%
-  select(country, qsofa, mews, uva) %>%
-  tbl_summary(
-    by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("uva", "mews" ) ~ 
-                     c("{median} ({p25}, {p75})", "{min}, {max}"),
-                     c("qsofa") ~ "{n} ({p}%)"),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-tbl_2b
-
-
-```
-
-
-```{r fig_time_death, fig.cap = "Time (days) to death by day 28 by patient group", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-time2death_px_tbl <- severity_data_cc_d28 %>%
-  filter(outcome_d28 == "Dead") %>%
-  select(px_group, time_to_death) %>%
-  tbl_summary(
-    by = px_group,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("time_to_death") ~ 
-                     c("{median} ({p25}, {p75})", "{min}, {max}")
-    ),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-    add_overall(last = T) %>%
-    add_stat_label() %>%
-  add_p(time_to_death ~ "wilcox.test")  %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-
-time2death_country_tbl <- severity_data_cc_d28 %>%
-  filter(outcome_d28 == "Dead") %>%
-  select(country, time_to_death) %>%
-  tbl_summary(
-    by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("time_to_death") ~ 
-                     c("{median} ({p25}, {p75})", "{min}, {max}")
-    ),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-    add_overall() %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-
-time2death_px_fig <- ggplot(data = severity_data_cc_d28 %>% 
-                              select(outcome_d28, px_group, time_to_death) %>%
-                              filter(outcome_d28 == "Dead"), 
-                        mapping = aes(y = time_to_death, x = px_group, fill = px_group)) + 
-  geom_boxplot() + 
-  scale_x_discrete(name = "Time to death (days)") +
-  scale_y_continuous(breaks = seq(0, 90, 10), limits = c(0, 90), name = "Days") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(title = "")    
-
-time2death_px_fig
-
-
-  
-```
-
-
-<!---BLOCK_LANDSCAPE_START--->
+\newpage
 
 ## Demographic and clinical characteristics of patients with incomplete data
 ### Table S1
-\newpage
 
-```{r, tab.cap = "Demographic and clinical characteristics of patients with incomplete data at day 28, by site", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+```{r, tab.cap = "Demographic and clinical characteristics of febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe), who had incomplete enrolment and follow-up data.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
 comp_data <- severity_data_cc_d28 %>%
@@ -1087,12 +871,8 @@ tbl_incomp_data <- incomp_data %>%
          qsofa = as.numeric(as.character(qsofa)),
          uva = as.numeric(as.character(uva))
          ) 
-#   
-# tbl_incomp_data %>%
-#   group_by(mews) %>%
-#   tally()
 
-tbl_incomp_data <- tbl_incomp_data %>%  
+tbl_s1 <- tbl_incomp_data %>%  
   tbl_summary( 
     by = country,
     type = list(c("altered_mental_status") ~ "categorical",
@@ -1105,22 +885,22 @@ tbl_incomp_data <- tbl_incomp_data %>%
       ) %>%
   add_stat_label() %>%
   modify_header(list(label ~"Variable")) %>%
+  modify_footnote(list(label ~ "IQR=interquartile range, bpm=beats per minute, brpm=breaths per minute, MEWS=modified early warning score, GCS=Glasgow coma scale score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score *Length of stay reported for inpatients only." )) %>%
   add_overall(last = T) %>%
     as_flex_table() %>%
       flextable::fontsize(part = "header", size = 8) %>%
       flextable::autofit()
 
-tbl_incomp_data
+tbl_s1
 
 
 ```
 
-<!---BLOCK_LANDSCAPE_STOP--->
 
 \newpage
 ## Day 28 by outcome by site
 ### Table S2 
-```{r tab.cap = "Demographic and clinical characteristics of patients by day 28 outcome, by site", tab.id = "tbl_2a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+```{r, tab.cap = "Demographic characteristics of febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe), stratified by outcome by site and time of follow-up", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
 tbl_2a_d28_site <- severity_data_cc_d28 %>%
@@ -1145,402 +925,47 @@ tbl_2a_d28_site <- severity_data_cc_d28 %>%
 tbl_2a_d28_site
 ```
 
-### Table S3 
-```{r tab.cap = "Time (days) to death by day 28, by patient group ", tab.id = "tbl_2a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-time2death_px_tbl
-
-```
-
-
-
 \newpage
-### Figure S1
-```{r fig_time_death_country, fig.cap = "Time (days) to death by recruitment site", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-time2death_country_fig <- ggplot(data = severity_data_cc_d28 %>% 
-                                   select(outcome_d28, country, time_to_death) %>%
-                                   mutate(country = if_else(country == "Laos", "Lao PDR", country)),
-                                   filter(outcome_d28 == "Dead"), 
-                                 mapping = aes(y = time_to_death, x = country, fill = country)) + 
-  geom_boxplot() + 
-  scale_x_discrete(name = "FIEBRE Site") +
-  scale_y_continuous(breaks = seq(0, 90, 10), limits = c(0, 90), name = "Time to death (days)") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(title = "")    
-
-time2death_country_fig
-```
-
-```{r tab.cap = "Time (days) to death by day 28, by recruiting site", tab.id = "tbl_2a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-time2death_country_tbl
-
-
-```
-\newpage
-```{r fig1, fig.cap = "Age distribution by gender",  include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-# fig1 <- severity_data_cc_d28 %>%
-#   ggplot(mapping = aes(x = age, color = sex)) +
-#   geom_freqpoly(binwidth = 2, size = 1.5) 
-# 
-# fig1
-
-
-age_sex <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = age, fill = sex)) +
-  geom_histogram( color='#e9ecef', alpha=0.8, bins = 9, boundary = 0, closed = "left", position = position_dodge2(preserve = "single", padding = 0.1)) +
-  scale_x_continuous(breaks=seq(0, 100, 20)) +
-  theme_classic()
-
-age_sex
-
-```
-
-
-
-```{r age_gender_site, fig.cap = "Age distribution by gender and site",  include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-# fig2 <- severity_data_cc_d28 %>%
-#   ggplot(mapping = aes(x = age, color = sex)) +
-#   geom_freqpoly(binwidth = 2, size = 1.5) +
-#   facet_wrap(vars(country))
-# 
-# fig2
-
-
-age_sex_site <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = age, fill = sex)) +
-  geom_histogram(color='#e9ecef', alpha=0.8, bins = 9, boundary = 0, closed = "left", position = position_dodge2(preserve = "single", padding = 0.1)) +
-  scale_x_continuous(breaks=seq(0, 100, 15)) +
-  facet_wrap(vars(country)) 
-
-age_sex_site
-
-```
-
-
-
-```{r fig_bar_mews, fig.cap = "Distribution of MEWs by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-mews_tbl_dead <- severity_data_cc_d28 %>%
-  count(mews, outcome_d28) %>%  
-  group_by(mews) %>%        
-  mutate(proportion_dead = n/sum(n)*100) %>%
-  filter(outcome_d28 == "Dead")
-
-mews_tbl_tot_p <- severity_data_cc_d28 %>%
-  count(mews) %>%  
-  mutate(proportion = n/sum(n)*100) 
-
-mews_fig <- left_join(
-  mews_tbl_tot_p,
-  mews_tbl_dead,
-  by = "mews"
-) %>%
-  mutate(proportion_dead = ifelse(is.na(proportion_dead), 0, proportion_dead)
-  ) %>%
-  select(mews, proportion, proportion_dead) %>%
-  ungroup()
-
-
-fig4 <- ggplot(data = mews_fig, 
-       mapping = aes(x = mews)) + 
-  geom_col(aes(y = proportion, fill = "Percent at MEW Score")) +
-  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
-  geom_point(aes(y = proportion_dead)) +
-    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
-    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11),
-                     labels  = c(0,1,2,3,4,5,6,7,8,9,10,11),
-                     name = "Modified Early Warning Score (MEWS)") +
-  scale_fill_manual(name = "", values = c("Percent at MEW Score" = "grey")) +
-  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
-  theme_bw()
-
-fig4
-
-```
-
-```{r fig_bar_mews_a, fig.cap = "Distribution of MEWs by Day 28 outcome (grouped)", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-mews_tbl_dead_a <- severity_data_cc_d28 %>%
-  mutate(mews_grouped = case_when(
-    mews == 10 ~ 9,
-    mews == 11 ~ 9,
-    TRUE ~ mews
-  ) ) %>%
-  count(mews_grouped, outcome_d28) %>%  
-  group_by(mews_grouped) %>%        
-  mutate(proportion_dead = n/sum(n)*100) %>%
-  filter(outcome_d28 == "Dead")
-
-mews_tbl_tot_p_a <- severity_data_cc_d28 %>%
-    mutate(mews_grouped = case_when(
-    mews == 10 ~ 9,
-    mews == 11 ~ 9,
-    TRUE ~ mews
-  ) ) %>%
-  count(mews_grouped) %>%  
-  mutate(proportion = n/sum(n)*100) 
-
-mews_fig_a <- left_join(
-  mews_tbl_tot_p_a,
-  mews_tbl_dead_a,
-  by = "mews_grouped"
-) %>%
-  mutate(proportion_dead = ifelse(is.na(proportion_dead), 0, proportion_dead)
-  ) %>%
-  select(mews_grouped, proportion, proportion_dead) %>%
-  ungroup()
-
-
-fig4a <- ggplot(data = mews_fig_a, 
-       mapping = aes(x = mews_grouped)) + 
-  geom_col(aes(y = proportion, fill = "Percent at MEWS")) +
-  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
-  geom_point(aes(y = proportion_dead)) +
-    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
-    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9),
-                     labels  = c(0,1,2,3,4,5,6,7,8,"9-11"),
-                     name = "MEWS") +
-  scale_fill_manual(name = "", values = c("Percent at MEWS" = "grey")) +
-  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
-  labs(caption = "") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-fig4a
-
-```
-
-```{r fig_scatter_mews, fig.cap = "Scatter plot of MEWs by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = F}
-  
-  mews_tbl2 <- severity_data_cc_d28 %>%
-    # count(mews, outcome_d28) %>%
-    # group_by(outcome_d28) %>%
-    mutate(mews = as.factor(mews))
-  
-  fig4b <- ggplot(data = mews_tbl2, 
-                  aes(x = outcome_d28, y = mews)) +
-      scale_y_discrete(name = "Modified Early Warning Score (MEWS)") +
-      # geom_bar()
-      scale_x_discrete(name = "Day 28 outcome") +
-      geom_jitter() +
-      theme_minimal()
-  
-  
-  fig4b
-
-```
-
-
-```{r fig_bar_qsofa, fig.cap = "Distribution of qSOFA by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-qsofa_tbl_dead <- severity_data_cc_d28 %>%
-  count(qsofa, outcome_d28) %>%  
-  group_by(qsofa) %>%        
-  mutate(proportion_dead = n/sum(n)*100) %>%
-    filter(outcome_d28 == "Dead")
-
-qsofa_tbl_tot_p <- severity_data_cc_d28 %>%
-  count(qsofa) %>%  
-  mutate(proportion = n/sum(n)*100) 
-
-qsofa_tbl <- left_join(
-  qsofa_tbl_tot_p,
-  qsofa_tbl_dead,
-  by = "qsofa"
-) %>%
-  select(qsofa, proportion, proportion_dead)
-
-fig5 <- ggplot(data = qsofa_tbl, 
-       mapping = aes(x = qsofa)) + 
-  geom_col(aes(y = proportion, fill = "Percent at qSOFA score")) +
-  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
-  geom_point(aes(y = proportion_dead)) +
-    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
-    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11),
-                     labels  = c(0,1,2,3,4,5,6,7,8,9,10,11),
-                     name = "qSOFA score") +
-  scale_fill_manual(name = "", values = c("Percent at qSOFA score" = "grey")) +
-  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-fig5
-
-```
-
-```{r fig_scatter_qsofa, fig.cap = "Distribution of qSOFA by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = F}
-
-qsofa_tbl <- severity_data_cc_d28 %>%
-  # count(mews, outcome_d28) %>%
-  # group_by(outcome_d28) %>%
-  mutate(qsofa = as.factor(qsofa))
-
-fig5b <- ggplot(data = qsofa_tbl, 
-                aes(x = outcome_d28, y = qsofa)) +
-    scale_y_discrete(name = "qSOFA score") +
-    # geom_bar()
-    scale_x_discrete(name = "Day 28 outcome") +
-    geom_jitter() +
-    theme_minimal()
-
-fig5b
-
-```
-
-
-```{r fig_bar_uva, fig.cap = "Distribution of UVA score by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-uva_tbl_dead <- severity_data_cc_d28 %>%
-  count(uva, outcome_d28) %>%  
-  group_by(uva) %>%        
-  mutate(proportion_dead = n/sum(n)*100) %>%
-  filter(outcome_d28 == "Dead")
-
-uva_tbl_tot_p <- severity_data_cc_d28 %>%
-  count(uva) %>%  
-  mutate(proportion = n/sum(n)*100) 
-
-uva_tbl <- left_join(
-  uva_tbl_tot_p,
-  uva_tbl_dead,
-  by = c("uva")
-) %>%
-  select(uva, proportion, proportion_dead)
-
-
-
-fig6 <- ggplot(data = uva_tbl, 
-       mapping = aes(x = uva)) + 
-  geom_col(aes(y = proportion, fill = "Percent at UVA Score")) +
-  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
-  geom_point(aes(y = proportion_dead)) +
-    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
-    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11, 12),
-                     labels  = c(0,1,2,3,4,5,6,7,8,9,10,11,12),
-                     name = "UVA score") +
-  scale_fill_manual(name = "", values = c("Percent at UVA Score" = "grey")) +
-  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
-  # theme(legend.box.spacing = unit(0.1, "cm"),
-  #       legend.key.size = unit(1, "cm"))
-  theme_bw() +
-  theme(legend.position = "bottom")
-
-fig6
-
-
-```
-
-
-
-```{r fig_bar_uva_group, fig.cap = "Distribution of UVA score by Day 28 outcome (grouped)", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-summary(as.factor(severity_data_cc_d28$uva))
-
-uva_tbl_dead_a <- severity_data_cc_d28 %>%
-   mutate(uva_grouped = case_when(
-    uva == 9 ~ 8,
-    uva == 10 ~ 8,
-    TRUE ~ uva
-  ) ) %>%
-  count(uva_grouped, outcome_d28) %>%  
-  group_by(uva_grouped) %>%        
-  mutate(proportion_dead = n/sum(n)*100) %>%
-  filter(outcome_d28 == "Dead")
-
-uva_tbl_tot_p_a <- severity_data_cc_d28 %>%
-   mutate(uva_grouped = case_when(
-    uva == 9 ~ 8,
-    uva == 10 ~ 8,
-    TRUE ~ uva
-  ) ) %>%
-  count(uva_grouped) %>%  
-  mutate(proportion = n/sum(n)*100) 
-
-uva_tbl_a <- left_join(
-  uva_tbl_tot_p_a,
-  uva_tbl_dead_a,
-  by = c("uva_grouped")
-) %>%
-  select(uva_grouped, proportion, proportion_dead)
-
-
-
-fig6a <- ggplot(data = uva_tbl_a, 
-       mapping = aes(x = uva_grouped)) + 
-      geom_col(aes(y = proportion, fill = "Percent at UVA score")) +
-    geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
-  geom_point(aes(y = proportion_dead)) +
-
-    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
-    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8),
-                     labels  = c(0,1,2,3,4,5,6,7,"8-12"),
-                     name = "UVA score") +
-  scale_fill_manual(name = "", values = c("Percent at UVA score" = "grey")) +
-  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
-
-  labs(caption = "") +
-  theme_bw() +
-  theme(legend.position = "bottom") +
-  guides(color = guide_legend(order = 1),
-    fill = guide_legend(order = 0)) 
-
-  fig6a
-
-
-
-```
-
-
-```{r fig_scatter_uva, fig.cap = "Scatter plot of UVA by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = F}
-
-
-uva_tbl <- severity_data_cc_d28 %>%
-  # count(mews, outcome_d28) %>%
-  # group_by(outcome_d28) %>%
-  mutate(uva = as.factor(uva))
-
-fig6b <- ggplot(data = uva_tbl, 
-                aes(x = outcome_d28, y = uva)) +
-    scale_y_discrete(name = "Universal Vital Assessment (UVA) score") +
-    # geom_bar()
-    scale_x_discrete(name = "Day 28 outcome") +
-    geom_jitter() +
-    theme_minimal()
-
-fig6b
-
-
-```
-
-### Figure 2
-```{r all_severity_scores_plot, fig.cap = "ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
-
-
-combined_scores <- cowplot::plot_grid(fig4a, fig5, fig6a,
-                               labels = c('a', 'b', "c"), label_size = 12, align = "h"
-                               )
-
-combined_scores  
-
-
-
-
-```
-
-
 
 ### Table S3
-```{r tbl_bar_score_death_site, tab.cap = "Distribution of outcomes for each severity each site", tab.id = "tbl_2a", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+```{r, tab.cap = "Time to death (days) by time to follow-up by patient group among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). IQR=interquartile range", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
-tbl_2a_d28_site_scores <- severity_data_cc_d28 %>%
+tbl_s3 <- severity_data_cc_d28 %>%
+  filter(outcome_d28 == "Dead") %>%
+  select(px_group, time_to_death) %>%
+  tbl_summary(
+    by = px_group,
+    type = list(all_dichotomous() ~ "categorical",
+                all_continuous() ~ "continuous2"
+                ),
+    statistic = list(c("time_to_death") ~ 
+                     c("{median} ({p25}, {p75})", "{min}, {max}")
+    ),
+    digits = all_continuous() ~ 1,
+    missing_text = "(Missing)"
+      ) %>%
+    add_overall(last = T) %>%
+    add_stat_label() %>%
+  add_p(time_to_death ~ "wilcox.test")  %>%
+     modify_header(list(label ~"Variable")) %>%
+      modify_footnote(list(label ~ "IQR=interquartile range, 1 = Mann-Whitney U test")) %>%
+    as_flex_table() %>%
+      flextable::fontsize(part = "header", size = 8) %>%
+      flextable::autofit()
+
+
+tbl_s3
+
+  
+```
+\newpage
+
+### Table S4
+```{r, tab.cap = "Distribution of each severity score by each country (Lao PDR, Malawi, Mozambique, and Zimbabwe) among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 with complete data by time of follow-up.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+
+
+tbl_s4 <- severity_data_cc_d28 %>%
   mutate(uva = as.factor(uva),
          mews = as.factor(mews), 
          qsofa = as.factor(qsofa)
@@ -1567,186 +992,47 @@ tbl_2a_d28_site_scores <- severity_data_cc_d28 %>%
       flextable::fontsize(part = "header", size = 8) %>%
       flextable::autofit()
 
-tbl_2a_d28_site_scores
+tbl_s4
 
 
 ```
 
-
-
-
-
-
+### Table S5
 \newpage
-## UVA ROC results
-
-```{r eval=T, echo=F, message=FALSE, warning=FALSE, fig7, fig.cap="UVA Receiver operating characteristic curve", include=T, paged.print=FALSE, results='asis'}
-
-
-uva_auc <- pROC::roc(severity_data_cc_d28$outcome_d28, 
-           severity_data_cc_d28$uva, percent = T)
-
-
-uva_age_auc <- pROC::roc(severity_data_cc_d28$outcome_d28, 
-           severity_data_cc_d28$uva_age, percent = T)
-
-
-
-uva_age_auc_value <- round(as.numeric(auc(uva_age_auc)[1]) / 100, 2)
-
-uva_age_auc_ci <- paste0("95% CI: ", round(pROC::ci.auc(uva_age_auc)[1] / 100, 2), "-", round(ci.auc(uva_age_auc)[3] / 100, 2))
- 
-uva_age_auc_fig_text <- paste0("AUC = ", uva_age_auc_value, "\n", uva_age_auc_ci)
-
-
-
-uva_auc_value <- round(as.numeric(auc(uva_auc)[1])/100, 2)
-
-uva_auc_ci <- paste0("95% CI: ", round(pROC::ci.auc(uva_auc)[1]/100, 2), "-", round(ci.auc(uva_auc)[3]/100, 2))
- 
-uva_auc_fig_text <- paste0("AUC = ", uva_auc_value, "\n", uva_auc_ci)
-
-```
-
-UVA area under the curve (AUC) = `r uva_auc_value`,  `r uva_auc_ci`   
-   
-  
-  
-  
-
-
-\newpage
-
-
-```{r, tab.cap = "UVA Specificity (%) and specificity values", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-uva_values <- coords(roc = uva_auc, x = "all", transpose = FALSE, ret = "all")
-
-uva_values <- uva_values %>%
-  select(threshold, specificity, sensitivity, "1-specificity", accuracy, npv, ppv) %>%
-  mutate(threshold_cat = case_when(
-    threshold -Inf & threshold <0.5 ~ 0,
-    threshold >=0.5 & threshold <1.5 ~ 1,
-    threshold >=1.5 & threshold <2.5 ~ 2,
-    threshold >=2.5 & threshold <3.5 ~ 3,
-    threshold >=3.5 & threshold <4.5 ~ 4,
-    threshold >=4.5 & threshold <5.5 ~ 5,
-    threshold >=5.5 & threshold <6.5 ~ 6,
-    threshold >=6.5 & threshold <7.5 ~ 7,
-    threshold >=7.5 & threshold <8.5 ~ 8,
-    threshold >=8.5 & threshold <9.5 ~ 9,
-    threshold >=9.5 & threshold <10.5 ~ 10,
-    threshold >=10.5 ~ 11
-  )
-  )
-
-
-
-uva_age_values <- coords(roc = uva_age_auc, x = "all", transpose = FALSE, ret = "all")
-
-uva_age_values <- uva_age_values %>%
-  select(threshold, specificity, sensitivity, "1-specificity", accuracy, npv, ppv) %>%
-  mutate(threshold_cat = case_when(
-    threshold -Inf & threshold <0.5 ~ 0,
-    threshold >=0.5 & threshold <1.5 ~ 1,
-    threshold >=1.5 & threshold <2.5 ~ 2,
-    threshold >=2.5 & threshold <3.5 ~ 3,
-    threshold >=3.5 & threshold <4.5 ~ 4,
-    threshold >=4.5 & threshold <5.5 ~ 5,
-    threshold >=5.5 & threshold <6.5 ~ 6,
-    threshold >=6.5 & threshold <7.5 ~ 7,
-    threshold >=7.5 & threshold <8.5 ~ 8,
-    threshold >=8.5 & threshold <9.5 ~ 9,
-    threshold >=9.5 & threshold <10.5 ~ 10,
-    threshold >=10.5 ~ 11
-  )
-  )
-
-
-```
-\newpage
-
-```{r, fig7a, fig.cap = "UVA Receiver operating characteristic curve", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-
-uva_values_plot <- uva_values %>%
-  select(threshold_cat, threshold, specificity, specificity_1 = "1-specificity", sensitivity, specificity) %>%
-  # mutate(across(c(threshold, specificity, specificity_1, sensitivity)) %>%
-  mutate(label = paste0(threshold_cat, " ", "(", round(specificity, 1), ", ", round(sensitivity, 1), ")"))
-
-
-uva_values_plot <- uva_values_plot %>%
-  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
-  geom_line() +
-  geom_point() +
-  annotate("text", x = 50, y = 50, label = uva_auc_fig_text) +
-  geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-             hjust = 0, nudge_x = 3,
-             label.size = NA
-             ) +
-  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
-  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
-
-uva_values_plot
-
-uva_values <- uva_values %>%
-  select(threshold_cat, specificity, sensitivity, npv, ppv) %>%
-  mutate(across(c(specificity, sensitivity, npv, ppv), ~round(.x, 2))
-         ) %>%
-  flextable()
-
-uva_values
-
-```
-
-\newpage
-```{r, fig7aa, fig.cap = "UVA age Receiver operating characteristic curve", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-
-uva_age_values_plot <- uva_age_values %>%
-  select(threshold_cat, threshold, specificity, specificity_1 = "1-specificity", sensitivity, specificity) %>%
-  # mutate(across(c(threshold, specificity, specificity_1, sensitivity)) %>%
-  mutate(label = paste0(threshold_cat, " ", "(", round(specificity, 1), ", ", round(sensitivity, 1), ")"))
-
-
-uva_age_values_plot <- uva_age_values_plot %>%
-  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
-  geom_line() +
-  geom_point() +
-  annotate("text", x = 50, y = 50, label = uva_age_auc_fig_text) +
-  geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-             hjust = 0, nudge_x = 3,
-             label.size = NA
-             ) +
-  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
-  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
-
-uva_age_values_plot
-
-uva_age_values <- uva_age_values %>%
-  select(threshold_cat, specificity, sensitivity, npv, ppv) %>%
-  mutate(across(c(specificity, sensitivity, npv, ppv), ~round(.x, 2))
-         ) %>%
-  flextable()
-
-uva_age_values
-
-```
-\newpage
-
-
-```{r, tab.cap = "UVA unadjusted and adjusted regression results", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+```{r, tab.cap = "Unadjusted and adjusted logistic regression results for modified early warning score (MEWS) among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 with complete data by time of follow-up across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe).", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
 severity_data_cc_d28_reg <- severity_data_cc_d28 %>%
+  mutate(mews_grouped = case_when(
+    mews == 0 ~ 1,
+    mews == 10 ~ 9,
+    mews == 11 ~ 9,
+    TRUE ~ mews
+  ) ) %>%
   # filter(uva != 10) %>%
-  mutate(uva_fact = as.factor(uva)) 
+  mutate(mews_grouped_fact = as.factor(mews_grouped),
+         hiv_comb = fct_relevel(hiv_comb, c("Negative", "Positive", "Unknown", "Indeterminant"))
+  ) %>%
+  filter(as.character(hiv_comb) == "Negative" | as.character(hiv_comb) == "Positive" ) %>%
+  mutate(qsofa_fact = as.factor(qsofa))
+
+
+
+severity_data_cc_d28_reg$hiv_comb <-   droplevels(severity_data_cc_d28_reg$hiv_comb, c("Unknown", "Indeterminant"))
+
+
+severity_data_cc_d28_reg$hiv_comb <- sjlabelled::set_label(severity_data_cc_d28_reg$hiv_comb, "HIV status")
+
+severity_data_cc_d28_reg$mews_grouped_fact <- sjlabelled::set_label(severity_data_cc_d28_reg$mews_grouped_fact, "MEWS")
+
+severity_data_cc_d28_reg$qsofa_fact <- sjlabelled::set_label(severity_data_cc_d28_reg$qsofa_fact, "qSOFA score")
 
 
 # Univariate regression
 
-uva_uv_reg_tbl <- severity_data_cc_d28_reg %>%
-  select("uva_fact", "age_cat", "sex", "outcome_d28") %>%
+
+mews_uv_reg_tbl <- severity_data_cc_d28_reg %>%
+  select("mews_grouped_fact", "age_cat", "sex", "hiv_comb", "outcome_d28")  %>%
   tbl_uvregression(
     method = glm,
     y = outcome_d28,
@@ -1755,16 +1041,15 @@ uva_uv_reg_tbl <- severity_data_cc_d28_reg %>%
     pvalue_fun = ~style_pvalue(.x, digits = 2), 
     hide_n = T
   ) %>%
-    modify_cols_merge(
+  modify_cols_merge(
     pattern = "{estimate} ({conf.low} - {conf.high})",
     rows = !is.na(estimate)
   ) %>%
-    modify_column_hide(columns = ci) %>%
+  modify_column_hide(columns = ci) %>%
   add_global_p() %>% # add global p-value 
   modify_header(update = list(
     label ~ "Variable",
     estimate ~ "Unadjusted OR (95% CI)",
-    # ci ~ "95% CI",
     p.value ~ "p-value"
   )
   )
@@ -1772,35 +1057,116 @@ uva_uv_reg_tbl <- severity_data_cc_d28_reg %>%
 
 #  Multivariate regression
 
-uva_mv_reg <- glm(outcome_d28 ~ uva_fact + age_cat + sex, family = "binomial", data = severity_data_cc_d28_reg)
+mews_mv_reg <- glm(outcome_d28 ~ mews_grouped_fact + age_cat + sex + hiv_comb, family = "binomial", data = severity_data_cc_d28_reg)
 
 # linear and quadratic term
 
-# uva_mv_reg <- glm(outcome_d28 ~ uva_fact + age + sex, family = "binomial", data = severity_data_cc_d28_reg)
 
-# option to group scores above 6 or 7 
-
-# summary(uva_mv_reg)
-
-
-
-uva_mv_reg_tbl <- tbl_regression(uva_mv_reg, 
-               exponentiate = TRUE, 
-               pvalue_fun = ~style_pvalue(.x, digits = 2)
+mews_mv_reg_tbl <- tbl_regression(mews_mv_reg, 
+                                  exponentiate = TRUE, 
+                                  pvalue_fun = ~style_pvalue(.x, digits = 2)
+) %>%
+  modify_cols_merge(
+    pattern = "{estimate} ({conf.low} - {conf.high})",
+    rows = !is.na(estimate)
   ) %>%
+  modify_column_hide(columns = ci) %>%
   add_global_p() %>%
-    modify_header(update = list(
+  modify_header(update = list(
     label ~ "Variable",
-    estimate ~ "Adjusted OR",
-    ci ~ "95% CI",
+    estimate ~ "Adjusted OR  (95% CI)",
     p.value ~ "p-value"
   )
   )
 
 # counts
 
-uva_tbl_count <- severity_data_cc_d28_reg %>% 
-  select(uva_fact, age_cat, sex, outcome_d28) %>% # keep only columns of interest
+mews_tbl_count <- severity_data_cc_d28_reg %>% 
+  select(mews_grouped_fact, age_cat, sex, hiv_comb, outcome_d28) %>% # keep only columns of interest
+  tbl_summary(     
+    by = outcome_d28,                                               # stratify entire table by outcome
+    percent = "row",
+    statistic = list(c(age_cat) ~ "{n} ({p}%)"),   # stats and format for categorical columns
+    digits = all_continuous() ~ 1,                              # rounding for continuous columns
+    type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
+  ) %>%
+  add_overall(statistic = ~"{n}") %>%
+  modify_header(update = list(
+    label ~ "Variable"
+  )
+  )
+
+mews_tbl_count$table_body$stat_0 <- (str_remove_all(mews_tbl_count$table_body$stat_0, "\\(100%\\)")
+)
+
+mews_reg_tbl <- tbl_merge(
+  tbls = list(mews_tbl_count, mews_uv_reg_tbl, mews_mv_reg_tbl)
+) %>%
+  modify_spanning_header(everything() ~ NA_character_) %>%
+  as_flex_table() %>%
+  flextable::fontsize(part = "header", size = 8) %>%
+  flextable::add_footer_lines("OR = Odds ratio, CI = Confidence intervals, Adjusted for age and gender, MEWS scores 10 and 11 are grouped into a MEWS score of 9, reference group is a MEWS score of 1, rather than 0.") %>%
+  align_text_col(align = "center") %>%
+  bold(bold = TRUE, part = "header")
+
+mews_reg_tbl
+
+
+```
+
+\newpage
+### Table S6
+```{r, tab.cap = "Unadjusted and adjusted logistic regression results for quick sequential organ failure assessment (qSOFA) among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 with complete data by time of follow-up across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe).", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+
+
+qsofa_uv_reg_tbl <- severity_data_cc_d28_reg %>%
+  select("qsofa_fact", "age_cat", "sex", "hiv_comb", "outcome_d28") %>%
+  tbl_uvregression(
+    method = glm,
+    y = outcome_d28,
+    method.args = list(family = binomial),
+    exponentiate = TRUE,
+    pvalue_fun = ~style_pvalue(.x, digits = 2), 
+    hide_n = T
+  ) %>%
+  modify_cols_merge(
+    pattern = "{estimate} ({conf.low} - {conf.high})",
+    rows = !is.na(estimate)
+  ) %>%
+    modify_column_hide(columns = ci) %>%
+  add_global_p() %>% # add global p-value 
+  modify_header(update = list(
+    label ~ "Variable",
+    estimate ~ "Unadjusted OR",
+    p.value ~ "p-value"
+  )
+  )
+
+#  Multivariate regression
+
+qsofa_mv_reg <- glm(outcome_d28 ~ qsofa_fact + age_cat + sex + hiv_comb, family = "binomial", data = severity_data_cc_d28_reg)
+
+qsofa_mv_reg_tbl <- tbl_regression(qsofa_mv_reg, 
+               exponentiate = TRUE, 
+               pvalue_fun = ~style_pvalue(.x, digits = 2)
+  ) %>%
+    modify_cols_merge(
+    pattern = "{estimate} ({conf.low} - {conf.high})",
+    rows = !is.na(estimate)
+  ) %>%
+  modify_column_hide(columns = ci) %>%
+  add_global_p() %>%
+    modify_header(update = list(
+    label ~ "Variable",
+    estimate ~ "Adjusted OR (95% CI)",
+    p.value ~ "p-value"
+  )
+  )
+
+# counts
+
+qsofa_tbl_count <- severity_data_cc_d28_reg %>% 
+  select(qsofa_fact, age_cat, sex, hiv_comb, outcome_d28) %>% # keep only columns of interest
   tbl_summary(     
     by = outcome_d28,                                               # stratify entire table by outcome
     percent = "row",
@@ -1808,91 +1174,32 @@ uva_tbl_count <- severity_data_cc_d28_reg %>%
     digits = all_continuous() ~ 1,                              # rounding for continuous columns
     type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
 ) %>%
-  add_overall(
-    statistic = ~"{n}"
-    ) %>%
+  add_overall(statistic = ~"{n}") %>%
       modify_header(update = list(
     label ~ "Variable"
   )
   )
+qsofa_tbl_count$table_body$stat_0 <- (str_remove_all(qsofa_tbl_count$table_body$stat_0, "\\(100%\\)")
+)
 
-
-uva_reg_tbl <- tbl_merge(
-  tbls = list(uva_tbl_count, uva_uv_reg_tbl, uva_mv_reg_tbl)
+tbl_s6 <- tbl_merge(
+  tbls = list(qsofa_tbl_count, qsofa_uv_reg_tbl, qsofa_mv_reg_tbl)
 ) %>%
-  # tab_spanner = c("****","**Univariate**", "**Multivariable**")) %>%
-  as_tibble() 
-
-col_Names <- names(uva_reg_tbl)
-
-col_Names <- str_remove_all(col_Names, "\\*")
-
-for(i in 1 : length(uva_reg_tbl))
-{
-  col_Names[i] <- paste0(col_Names[i], paste0(rep("\r", i), collapse = ""), collapse = "")
-}
-
-colnames(uva_reg_tbl) <- col_Names
-
-uva_reg_tbl <- uva_reg_tbl %>%
-  mutate("Overall, N = 2,779\r\r" = str_remove_all(uva_reg_tbl[[2]], " \\(100%\\)"))
-
-uva_reg_tbl <- uva_reg_tbl %>%
-  flextable() %>%
+  modify_spanning_header(everything() ~ NA_character_) %>%
+  as_flex_table() %>%
   flextable::fontsize(part = "header", size = 8) %>%
   flextable::add_footer_lines("OR = Odds ratio, CI = Confidence intervals, Adjusted for age and gender") %>%
-  align_text_col(align = "center")
+  align_text_col(align = "center") %>%
+    bold(bold = TRUE, part = "header")
 
 
-uva_reg_tbl
-
-
-
-
+tbl_s6
 
 ```
 
-
-
-
-```{r, fig8, fig.cap = "UVA Adjusted odds ratio plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-uva_mv_reg_plot <- uva_mv_reg %>%
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
-  mutate(across(where(is.numeric), round, digits = 2)) %>%
-  tibble()
-
-## remove the intercept term from your multivariable results
-
-fig8 <- uva_mv_reg_plot %>% 
-    filter(str_detect(term, "uva_fact*") & 
-           term != "uva_fact10") %>% 
-  #set order of levels to appear along y-axis
-  # mutate(term = fct_relevel(term,
-  #   "uva_fact9", "uva_fact8", "uva_fact7","uva_fact6", "uva_fact5", "uva_fact4", "uva_fact3", "uva_fact2", "uva_fact1")
-  #   ) %>%
-
-  ggplot(aes(x = estimate, y = term)) +
-  geom_point(size = 3, shape=19) + 
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
-  geom_vline(xintercept = 1, linetype = "dashed") +
-  scale_x_log10(name = "", 
-                breaks = scales::log_breaks(8)) +
-  scale_y_discrete(name = "Universal Vital Assessment (UVA) score", 
-                   labels = c("1", "2", "3", "4", "5", "6", "7", "8", "9")
-                   ) +
-  labs(caption = "Adjusted for age and gender, (OR for UVA score of 10 was removed in figure)") +
-  coord_flip() +
-  theme_minimal()
-
-fig8
-
-```
 \newpage
-
-Due to the small number of outcomes in UVA scores above 8, UVA scores 9 and 10, were grouped into a UVA score of 8.  
 ### Table S7
-```{r, tab.cap = "Grouped UVA unadjusted and adjusted regression results", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+```{r, tab.cap = "Unadjusted and adjusted logistic regression results for universal vital assessment score (UVA) among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 with complete data by time of follow-up across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe).", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
 severity_data_cc_d28_reg <- severity_data_cc_d28 %>%
@@ -1901,7 +1208,6 @@ severity_data_cc_d28_reg <- severity_data_cc_d28 %>%
     uva == 10 ~ 8,
     TRUE ~ uva
   ) ) %>%
-  # filter(uva != 10) %>%
   mutate(uva_grouped_fact = as.factor(uva_grouped)) 
 
 severity_data_cc_d28_reg$uva_grouped_fact <- sjlabelled::set_label(severity_data_cc_d28_reg$uva_grouped_fact, "UVA score")
@@ -1980,7 +1286,7 @@ uva_tbl_count <- severity_data_cc_d28_reg %>%
 uva_tbl_count$table_body$stat_0 <- (str_remove_all(uva_tbl_count$table_body$stat_0, "\\(100%\\)")
 )
 
-uva_reg_tbl <- tbl_merge(
+tbl_s5 <- tbl_merge(
   tbls = list(uva_tbl_count, uva_uv_reg_tbl, uva_mv_reg_tbl)
 ) %>%
   modify_spanning_header(everything() ~ NA_character_) %>%
@@ -1992,49 +1298,264 @@ uva_reg_tbl <- tbl_merge(
 
 
 
-uva_reg_tbl
+tbl_s5
 
 ```
-
-```{r, fig8a, fig.cap = "UVA grouped, adjusted odds ratio plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-uva_mv_reg_plot <- uva_mv_reg %>%
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
-  mutate(across(where(is.numeric), round, digits = 2)) %>%
-  tibble()
-
-## remove the intercept term from your multivariable results
-
-fig8a <- uva_mv_reg_plot %>% 
-    filter(str_detect(term, "uva_grouped_fact*")) %>% 
-
-  ggplot(aes(x = estimate, y = term)) +
-  geom_point(size = 3, shape=19) + 
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
-  geom_vline(xintercept = 1, linetype = "dashed") +
-  scale_x_log10(name = "Adjusted odds ratio with 95% CI", 
-                breaks = scales::log_breaks(8),
-                limits = c(0.9, 800)
-                ) +
-  scale_y_discrete(name = "UVA score", 
-                   limits = c("uva_grouped_fact8", "uva_grouped_fact7", "uva_grouped_fact6", "uva_grouped_fact5", "uva_grouped_fact4", "uva_grouped_fact3", "uva_grouped_fact2", "uva_grouped_fact1"), 
-                   labels = c("8-10", "7", "6", "5", "4", "3", "2", "1")
-                   ) +
-  labs(caption = "") +
-  # coord_flip() +
-  theme_minimal()
-
-fig8a
-
-# Adjusted for age and gender. A UVA score of 8, also includes outcomes for scores 9 and 10
-
-```
-
 
 
 \newpage
-## MEWS ROC results
+### Figure 1
 
+\newpage
+
+```{r, Fig1, fig.cap = "Flowchart of febrile participants (aged ≥15 years) enrolled and followed up between 2018 and 2021 at four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score.", echo = F, message = F, fig.width=9, fig.height = 6}
+
+
+sample <- nrow(severity_data_cc_d28)
+
+
+miss1 <- severity_data %>%
+  mutate(outcome_d28 = as.character(outcome_d28)) %>%
+  filter(!is.na(outcome_d28)) %>%
+  filter(outcome_d28 == "lost to fup") %>%
+  nrow()
+
+
+miss_scores <- severity_data_v1 %>%
+    filter(if_any(c(modGCS, qsofa, uva, mews), ~ is.na(.))) %>%
+    nrow()
+
+
+miss3 <- miss_scores
+
+total_missing <- (miss1 + miss3)
+
+total_missing_p <- paste0(round(total_missing/total_px*100, 0), "%")
+
+     
+grid.newpage()
+
+
+org_cohort <- boxGrob(glue("Total number of participants (≥15 years) with fever enrolled",
+                           "n = {pop}",
+                           pop = txtInt(total_px),
+                           .sep = "\n"),
+                      x = .5,
+                      y = .8
+                      )
+
+included <- boxGrob(glue("Participants (≥15 years) with complete data analysed",
+                         "n = {sample}",
+                         sample = txtInt(sample),
+                         .sep = "\n"),
+                    x = .5, 
+                    y = .2
+                    )
+
+excluded <- boxGrob(glue("Excluded n = {total_missing} ({total_missing_p}):",
+                         " - Loss to follow-up: {miss1}",
+                         " - Missing severity score \n (UVA, MEWS, qSOFA): {miss3}",
+                         .sep = "\n"),
+                    just = "left"
+                    )
+
+
+
+# vert <- spreadVertical(org_cohort,
+#                        included
+#                        )
+
+excluded <- moveBox(excluded,
+                    x = 0.8,
+                    y = .5
+                    )
+
+
+org_cohort
+included
+excluded
+connectGrob(org_cohort, excluded, "L")
+connectGrob(org_cohort, included, type = "vert") 
+
+
+
+```
+
+
+\newpage
+
+### Figure 2a
+
+```{r fig_bar_mews_a, fig.cap = "Distribution of MEWs by Day 28 outcome (grouped)", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+
+mews_tbl_dead_a <- severity_data_cc_d28 %>%
+  mutate(mews_grouped = case_when(
+    mews == 10 ~ 9,
+    mews == 11 ~ 9,
+    TRUE ~ mews
+  ) ) %>%
+  count(mews_grouped, outcome_d28) %>%  
+  group_by(mews_grouped) %>%        
+  mutate(proportion_dead = n/sum(n)*100) %>%
+  filter(outcome_d28 == "Dead")
+
+mews_tbl_tot_p_a <- severity_data_cc_d28 %>%
+    mutate(mews_grouped = case_when(
+    mews == 10 ~ 9,
+    mews == 11 ~ 9,
+    TRUE ~ mews
+  ) ) %>%
+  count(mews_grouped) %>%  
+  mutate(proportion = n/sum(n)*100) 
+
+mews_fig_a <- left_join(
+  mews_tbl_tot_p_a,
+  mews_tbl_dead_a,
+  by = "mews_grouped"
+) %>%
+  mutate(proportion_dead = ifelse(is.na(proportion_dead), 0, proportion_dead)
+  ) %>%
+  select(mews_grouped, proportion, proportion_dead) %>%
+  ungroup()
+
+
+fig2a <- ggplot(data = mews_fig_a, 
+       mapping = aes(x = mews_grouped)) + 
+  geom_col(aes(y = proportion, fill = "Percent at MEWS")) +
+  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
+  geom_point(aes(y = proportion_dead)) +
+    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
+    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9),
+                     labels  = c(0,1,2,3,4,5,6,7,8,"9-11"),
+                     name = "MEWS") +
+  scale_fill_manual(name = "", values = c("Percent at MEWS" = "grey")) +
+  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
+  labs(caption = "") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+fig2a
+
+```
+
+### Figure 2b
+
+```{r fig_bar_qsofa, fig.cap = "Distribution of qSOFA by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+
+
+qsofa_tbl_dead <- severity_data_cc_d28 %>%
+  count(qsofa, outcome_d28) %>%  
+  group_by(qsofa) %>%        
+  mutate(proportion_dead = n/sum(n)*100) %>%
+    filter(outcome_d28 == "Dead")
+
+qsofa_tbl_tot_p <- severity_data_cc_d28 %>%
+  count(qsofa) %>%  
+  mutate(proportion = n/sum(n)*100) 
+
+qsofa_tbl <- left_join(
+  qsofa_tbl_tot_p,
+  qsofa_tbl_dead,
+  by = "qsofa"
+) %>%
+  select(qsofa, proportion, proportion_dead)
+
+fig2b <- ggplot(data = qsofa_tbl, 
+       mapping = aes(x = qsofa)) + 
+  geom_col(aes(y = proportion, fill = "Percent at qSOFA score")) +
+  geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
+  geom_point(aes(y = proportion_dead)) +
+    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
+    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8,9,10,11),
+                     labels  = c(0,1,2,3,4,5,6,7,8,9,10,11),
+                     name = "qSOFA score") +
+  scale_fill_manual(name = "", values = c("Percent at qSOFA score" = "grey")) +
+  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+fig2b
+
+```
+
+### Figure 2c
+
+```{r fig_bar_uva_group, fig.cap = "Distribution of UVA score by Day 28 outcome (grouped)", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+
+
+uva_tbl_dead_a <- severity_data_cc_d28 %>%
+   mutate(uva_grouped = case_when(
+    uva == 9 ~ 8,
+    uva == 10 ~ 8,
+    TRUE ~ uva
+  ) ) %>%
+  count(uva_grouped, outcome_d28) %>%  
+  group_by(uva_grouped) %>%        
+  mutate(proportion_dead = n/sum(n)*100) %>%
+  filter(outcome_d28 == "Dead")
+
+uva_tbl_tot_p_a <- severity_data_cc_d28 %>%
+   mutate(uva_grouped = case_when(
+    uva == 9 ~ 8,
+    uva == 10 ~ 8,
+    TRUE ~ uva
+  ) ) %>%
+  count(uva_grouped) %>%  
+  mutate(proportion = n/sum(n)*100) 
+
+uva_tbl_a <- left_join(
+  uva_tbl_tot_p_a,
+  uva_tbl_dead_a,
+  by = c("uva_grouped")
+) %>%
+  select(uva_grouped, proportion, proportion_dead)
+
+
+
+fig2c <- ggplot(data = uva_tbl_a, 
+       mapping = aes(x = uva_grouped)) + 
+      geom_col(aes(y = proportion, fill = "Percent at UVA score")) +
+    geom_line(aes(y = proportion_dead, color = "Percent mortality")) +
+  geom_point(aes(y = proportion_dead)) +
+
+    scale_y_continuous(limits = c(0, 100), name = "Percent (%)") +
+    scale_x_continuous(breaks = c(0,1,2,3,4,5,6,7,8),
+                     labels  = c(0,1,2,3,4,5,6,7,"8-12"),
+                     name = "UVA score") +
+  scale_fill_manual(name = "", values = c("Percent at UVA score" = "grey")) +
+  scale_color_manual(name = "", values = c("Percent mortality" = "black")) +
+
+  labs(caption = "") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(order = 1),
+    fill = guide_legend(order = 0)) 
+
+  fig2c
+
+
+
+```
+
+### Figure 2
+```{r, Fig2, fig.cap = "The percentage distribution of each severity score (MEWS, qSOFA and UVA) and associated mortality at time of day 28 follow-up, among febrile participants (aged ≥15 years) with complete data enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). Severity scores above 8 for MEWS and above 7 for UVA were grouped due to less than 5 outcomes reported. MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+
+
+fig_2 <- cowplot::plot_grid(fig2a, fig2b, fig2c,
+                               labels = c('a', 'b', "c"), label_size = 12, align = "h"
+                               )
+
+fig_2  
+
+
+
+
+```
+
+
+
+### Figure 3a
+#### MEWS ROC results
 ```{r, include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
@@ -2058,9 +1579,6 @@ mews_hiv_value_auc_ci <- paste0("95% CI: ", round(pROC::ci.auc(mews_hiv_auc)[1]/
 ```
 
 MEWS area under the curve = `r mews_auc_value`,  `r mews_auc_ci`   
-   
-  
-  
 
 ```{r, tab.cap = "MEWS Specificity (%) and specificity values", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
@@ -2091,7 +1609,7 @@ mews_values <- mews_values %>%
 ```
 
 
-```{r, fig9, fig.cap = "MEWS Receiver operating characteristic curve"}
+```{r, fig3a, fig.cap = "MEWS Receiver operating characteristic curve"}
 
 mews_values_plot <- mews_values %>%
   select(threshold_cat, threshold, specificity, specificity_1 = "1-specificity", sensitivity, specificity) %>%
@@ -2104,10 +1622,10 @@ mews_values_plot <- mews_values_plot %>%
   geom_line() +
   geom_point() +
   annotate("text", x = 40, y = 50, label = mews_auc_fig_text) +
-  geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-             hjust = 0, nudge_x = 3,
-             label.size = NA
-             ) +
+  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
+  #            hjust = 0, nudge_x = 3,
+  #            label.size = NA
+  #            ) +
   scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
   scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
 
@@ -2123,350 +1641,12 @@ mews_values
 
 ```
 
-
 \newpage
+### Figure 3b
+#### qSOFA ROC results
 
-```{r, tab.cap = "MEWS score by Day 28 outcome", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
-
-severity_data_cc_d28 %>%
-  select(mews, age_cat, sex, outcome_d28) %>%
-  mutate(mews = as.factor(mews)) %>%
-  tbl_summary(by = outcome_d28)  %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-
-```
-
-
-```{r, tab.cap = "Clinical signs for a MEWS score of 0", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = F }
-
-
-severity_data_cc_d28 %>%
-  select(mews, px_eyes, px_eyes_no, temp, bp_systolic, heart_rate, respiratory_rate, modGCS) %>%
-  filter(mews < 1) %>%
-  tbl_summary(
-    statistic = list(c("px_eyes", "px_eyes_no", "temp", "bp_systolic", "heart_rate", "respiratory_rate", "modGCS") ~ "{n}")
-  ) %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
-
-
-```
-
-\newpage
-
-```{r, tab.cap = "MEWS unadjusted and adjusted regression results", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-
-severity_data_cc_d28_reg <- severity_data_cc_d28 %>%
-  mutate(mews_fact = as.factor(mews),
-         hiv_comb = fct_relevel(hiv_comb, c("Negative", "Positive", "Unknown", "Indeterminant"))
-         ) %>%
-  filter(as.character(hiv_comb) == "Negative" | as.character(hiv_comb) == "Positive" ) %>%
-  mutate(qsofa_fact = as.factor(qsofa))
-
-
-mews_uv_reg_tbl <- severity_data_cc_d28_reg %>%
-  select("mews_fact", "age_cat", "sex", "hiv_comb", "outcome_d28") %>%
-  tbl_uvregression(
-    method = glm,
-    y = outcome_d28,
-    method.args = list(family = binomial),
-    exponentiate = TRUE,
-    pvalue_fun = ~style_pvalue(.x, digits = 2), 
-    hide_n = T
-  ) %>%
-  add_global_p() %>% # add global p-value 
-  modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Unadjusted OR",
-    ci ~ "95% CI",
-    p.value ~ "p-value"
-  )
-  )
-
-#  Multivariate regression
-
-mews_mv_reg <- glm(outcome_d28 ~ mews_fact + age_cat + sex, family = "binomial", data = severity_data_cc_d28_reg)
-
-
-mews_mv_reg_tbl <- tbl_regression(mews_mv_reg, 
-               exponentiate = TRUE, 
-               pvalue_fun = ~style_pvalue(.x, digits = 2)
-  ) %>%
-  add_global_p() %>%
-    modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Adjusted OR",
-    ci ~ "95% CI",
-    p.value ~ "p-value"
-  )
-  )
-
-# counts
-
-mews_tbl_count <- severity_data_cc_d28_reg %>% 
-  select(mews_fact, age_cat, sex, outcome_d28) %>% # keep only columns of interest
-  tbl_summary(     
-    by = outcome_d28,                                               # stratify entire table by outcome
-    percent = "row",
-    statistic = list(c(age_cat) ~ "{n} ({p}%)"),   # stats and format for categorical columns
-    digits = all_continuous() ~ 1,                              # rounding for continuous columns
-    type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
-) %>%
-  add_overall(
-      statistic = ~"{n}"
-      ) %>%
-      modify_header(update = list(
-    label ~ "Variable"
-  )
-  )
-
-
-mews_reg_tbl <- tbl_merge(
-  tbls = list(mews_tbl_count, mews_uv_reg_tbl, mews_mv_reg_tbl)
-) %>%
-  # tab_spanner = c("****","**Univariate**", "**Multivariable**")) %>%
-  as_tibble() 
-
-col_Names <- names(mews_reg_tbl)
-
-col_Names <- str_remove_all(col_Names, "\\*")
-
-for(i in 1 : length(mews_reg_tbl))
-{
-  col_Names[i] <- paste0(col_Names[i], paste0(rep("\r", i), collapse = ""), collapse = "")
-}
-
-colnames(mews_reg_tbl) <- col_Names
-
-mews_reg_tbl <- mews_reg_tbl %>%
-  mutate("Overall, N = 2,779\r\r" = str_remove_all(mews_reg_tbl[[2]], " \\(100%\\)"))
-
-mews_reg_tbl <- mews_reg_tbl %>%
-  flextable() %>%
-  flextable::fontsize(part = "header", size = 8) %>%
-  flextable::add_footer_lines("OR = Odds ratio, CI = Confidence intervals, Adjusted for age and gender, Reference is a MEWS score of 1 (rather than 0)") %>%
-  align_text_col(align = "center")
-
-
-mews_reg_tbl
-```
-
-\newpage
-```{r eval=, echo=F, message=FALSE, warning=FALSE, fig9_OR, fig.cap="MEWS Adjusted odds ratio plot", include=T, paged.print=FALSE, results='asis', eval = F}
-
-mews_mv_reg_plot <- mews_mv_reg %>%
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
-  mutate(across(where(is.numeric), round, digits = 2)) %>%
-  tibble()
-
-## remove the intercept term from your multivariable results
-
-fig9 <- mews_mv_reg_plot %>% 
-    filter(str_detect(term, "mews_fact*") & 
-           term != "mews_fact11") %>% 
-  #set order of levels to appear along y-axis
-  mutate(term = fct_relevel(term,
-    "mews_fact2", "mews_fact3", "mews_fact4","mews_fact5", "mews_fact6", "mews_fact7", "mews_fact8", "mews_fact9", "mews_fact10")
-    ) %>%
-
-  ggplot(aes(x = estimate, y = term)) +
-  geom_point(size = 3, shape=19) + 
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
-  geom_vline(xintercept = 1, linetype = "dashed") +
-  scale_x_log10(breaks = scales::log_breaks(8), 
-                limits = c(1, 800)
-) +
-  scale_y_discrete(labels = c("2", "3", "4", "5", "6", "7", "8", "9", "10")
-                   ) +
-  labs(caption = "Adjusted for age and gender, reference group is a MEWS score of 1, rather than 0.", 
-       x = "Adjusted odds ratio with 95% CI",
-       y = "Modified early warning score (MEWS)"
-       ) +
-  coord_flip() +
-  theme_minimal()
-
-fig9
-
-```
-
-\newpage
-
-Due to the small number of outcomes in MEWS scores of 10 and 11, these scores were grouped into a MEWS score of 9.  
-### Table S5: 
-```{r, tab.cap = "Grouped MEWS unadjusted and adjusted regression results", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-
-severity_data_cc_d28_reg <- severity_data_cc_d28 %>%
-  mutate(mews_grouped = case_when(
-    mews == 0 ~ 1,
-    mews == 10 ~ 9,
-    mews == 11 ~ 9,
-    TRUE ~ mews
-  ) ) %>%
-  # filter(uva != 10) %>%
-  mutate(mews_grouped_fact = as.factor(mews_grouped),
-         hiv_comb = fct_relevel(hiv_comb, c("Negative", "Positive", "Unknown", "Indeterminant"))
-         ) %>%
-  filter(as.character(hiv_comb) == "Negative" | as.character(hiv_comb) == "Positive" ) %>%
-    mutate(qsofa_fact = as.factor(qsofa))
-
-
-
-severity_data_cc_d28_reg$hiv_comb <-   droplevels(severity_data_cc_d28_reg$hiv_comb, c("Unknown", "Indeterminant"))
-
-
-severity_data_cc_d28_reg$hiv_comb <- sjlabelled::set_label(severity_data_cc_d28_reg$hiv_comb, "HIV status")
-
-severity_data_cc_d28_reg$mews_grouped_fact <- sjlabelled::set_label(severity_data_cc_d28_reg$mews_grouped_fact, "MEWS")
-
-severity_data_cc_d28_reg$qsofa_fact <- sjlabelled::set_label(severity_data_cc_d28_reg$qsofa_fact, "qSOFA score")
-
-
-# Univariate regression
-
-
-mews_uv_reg_tbl <- severity_data_cc_d28_reg %>%
-  select("mews_grouped_fact", "age_cat", "sex", "hiv_comb", "outcome_d28")  %>%
-  tbl_uvregression(
-    method = glm,
-    y = outcome_d28,
-    method.args = list(family = binomial),
-    exponentiate = TRUE,
-    pvalue_fun = ~style_pvalue(.x, digits = 2), 
-    hide_n = T
-  ) %>%
-  modify_cols_merge(
-    pattern = "{estimate} ({conf.low} - {conf.high})",
-    rows = !is.na(estimate)
-  ) %>%
-  modify_column_hide(columns = ci) %>%
-  add_global_p() %>% # add global p-value 
-  modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Unadjusted OR (95% CI)",
-    p.value ~ "p-value"
-  )
-  )
-
-
-#  Multivariate regression
-
-mews_mv_reg <- glm(outcome_d28 ~ mews_grouped_fact + age_cat + sex + hiv_comb, family = "binomial", data = severity_data_cc_d28_reg)
-
-# linear and quadratic term
-
-
-mews_mv_reg_tbl <- tbl_regression(mews_mv_reg, 
-               exponentiate = TRUE, 
-               pvalue_fun = ~style_pvalue(.x, digits = 2)
-  ) %>%
-   modify_cols_merge(
-    pattern = "{estimate} ({conf.low} - {conf.high})",
-    rows = !is.na(estimate)
-  ) %>%
-  modify_column_hide(columns = ci) %>%
-  add_global_p() %>%
-    modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Adjusted OR  (95% CI)",
-    p.value ~ "p-value"
-  )
-  )
-
-# counts
-
-mews_tbl_count <- severity_data_cc_d28_reg %>% 
-  select(mews_grouped_fact, age_cat, sex, hiv_comb, outcome_d28) %>% # keep only columns of interest
-  tbl_summary(     
-    by = outcome_d28,                                               # stratify entire table by outcome
-    percent = "row",
-    statistic = list(c(age_cat) ~ "{n} ({p}%)"),   # stats and format for categorical columns
-    digits = all_continuous() ~ 1,                              # rounding for continuous columns
-    type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
-) %>%
-  add_overall(statistic = ~"{n}") %>%
-      modify_header(update = list(
-    label ~ "Variable"
-  )
-  )
-
-mews_tbl_count$table_body$stat_0 <- (str_remove_all(mews_tbl_count$table_body$stat_0, "\\(100%\\)")
-)
-
-mews_reg_tbl <- tbl_merge(
-  tbls = list(mews_tbl_count, mews_uv_reg_tbl, mews_mv_reg_tbl)
-) %>%
-  modify_spanning_header(everything() ~ NA_character_) %>%
-  as_flex_table() %>%
-flextable::fontsize(part = "header", size = 8) %>%
-  flextable::add_footer_lines("OR = Odds ratio, CI = Confidence intervals, Adjusted for age and gender, MEWS scores 10 and 11 are grouped into a MEWS score of 9, reference group is a MEWS score of 1, rather than 0.") %>%
-  align_text_col(align = "center") %>%
-  bold(bold = TRUE, part = "header")
-
-mews_reg_tbl
-
-```
-
-```{r, fig9b, fig.cap = "MEWS grouped, adjusted odds ratio plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
-
-mews_mv_reg_plot <- mews_mv_reg %>%
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
-  mutate(across(where(is.numeric), round, digits = 2)) %>%
-  tibble()
-
-## remove the intercept term from your multivariable results
-
-fig9b <- mews_mv_reg_plot %>% 
-    filter(str_detect(term, "mews_grouped_fact*")) %>% 
-     arrange((term)) %>%
-
-  ggplot(aes(x = estimate, y = term)) +
-  geom_point(size = 3, shape=19) + 
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
-  geom_vline(xintercept = 1, linetype = "dashed") +
-  scale_x_log10(name = "", 
-                breaks = scales::log_breaks(8), 
-                                limits = c(0.9, 800)
-) +
-  scale_y_discrete(name = "MEWS", 
-                   limits = c("mews_grouped_fact9", "mews_grouped_fact8", "mews_grouped_fact7", "mews_grouped_fact6", "mews_grouped_fact5", "mews_grouped_fact4", "mews_grouped_fact3", "mews_grouped_fact2"),
-                   # , 
-                   labels = c("9-11", "8", "7", "6", "5", "4", "3", "2")
-                   
-                   ) +
-  # scale_y_reverse() +
-  labs(caption = "") +
-  # scale_x_reverse() +
-  # coord_flip() +
-  theme_minimal()
-
-fig9b
-
-# Adjusted for age and gender. A MEWS of 9, also includes outcomes for scores 10 and 11, reference group is a MEWS of 1
-# 
-# h <- ggplot(diamonds, aes(carat)) +
-#   geom_histogram()
-# h
-# h + coord_flip()
-# h + coord_flip() + scale_x_reverse()
-
-```
-
-\newpage
-
-## qSOFA tables and figures
-
-```{r, fig10, fig.cap = "qSOFA Receiver operating characteristic curve", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+```{r, fig3b, fig.cap = "qSOFA Receiver operating characteristic curve", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
 qsofa_auc <- pROC::roc(severity_data_cc_d28$outcome_d28, 
@@ -2489,9 +1669,7 @@ qsofa_hiv_value_auc_ci <- paste0("95% CI: ", round(pROC::ci.auc(qsofa_hiv_auc)[1
 
 
 ```
-
 qSOFA area under the curve = `r qsofa_auc_value`,  `r qsofa_auc_ci`
-
 
 ```{r, tab.cap = "qSOFA Specificity (%) and specificity values", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
@@ -2523,17 +1701,16 @@ qsofa_values_plot <- qsofa_values_plot %>%
   geom_line() +
   geom_point() +
   annotate("text", x = 40, y = 50, label = qsofa_auc_fig_text) +
-  geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-             hjust = 0, nudge_x = 3,
-             label.size = NA
-             ) +
+  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
+  #            hjust = 0, nudge_x = 3,
+  #            label.size = NA
+  #            ) +
   scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
   scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
 
 qsofa_values_plot 
 
 ```
-\newpage
 
 ```{r, tab.cap = "qSOFA Specificity (%) and specificity values", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
@@ -2551,146 +1728,92 @@ qsofa_values %>%
 #   mutate(across(c(sensitivity, specificity, "1-specificity", accuracy, npv, ppv))) 
 
 ```
-### Table S6: 
-```{r, tab.cap = "qSOFA unadjusted and adjusted regression results", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
 
-qsofa_uv_reg_tbl <- severity_data_cc_d28_reg %>%
-  select("qsofa_fact", "age_cat", "sex", "hiv_comb", "outcome_d28") %>%
-  tbl_uvregression(
-    method = glm,
-    y = outcome_d28,
-    method.args = list(family = binomial),
-    exponentiate = TRUE,
-    pvalue_fun = ~style_pvalue(.x, digits = 2), 
-    hide_n = T
-  ) %>%
-  modify_cols_merge(
-    pattern = "{estimate} ({conf.low} - {conf.high})",
-    rows = !is.na(estimate)
-  ) %>%
-    modify_column_hide(columns = ci) %>%
-  add_global_p() %>% # add global p-value 
-  modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Unadjusted OR",
-    p.value ~ "p-value"
+\newpage
+### Figure 3c
+#### UVA Score ROC results
+
+```{r, eval=T, echo=F, message=FALSE, warning=FALSE, fig7, fig.cap="UVA Receiver operating characteristic curve", include=T, paged.print=FALSE, results='asis'}
+
+
+uva_auc <- pROC::roc(severity_data_cc_d28$outcome_d28, 
+           severity_data_cc_d28$uva, percent = T)
+
+uva_auc_value <- round(as.numeric(auc(uva_auc)[1])/100, 2)
+
+uva_auc_ci <- paste0("95% CI: ", round(pROC::ci.auc(uva_auc)[1]/100, 2), "-", round(ci.auc(uva_auc)[3]/100, 2))
+ 
+uva_auc_fig_text <- paste0("AUC = ", uva_auc_value, "\n", uva_auc_ci)
+
+```
+
+UVA area under the curve (AUC) = `r uva_auc_value`,  `r uva_auc_ci`   
+
+```{r, tab.cap = "UVA Specificity (%) and specificity values", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+
+uva_values <- coords(roc = uva_auc, x = "all", transpose = FALSE, ret = "all")
+
+uva_values <- uva_values %>%
+  select(threshold, specificity, sensitivity, "1-specificity", accuracy, npv, ppv) %>%
+  mutate(threshold_cat = case_when(
+    threshold -Inf & threshold <0.5 ~ 0,
+    threshold >=0.5 & threshold <1.5 ~ 1,
+    threshold >=1.5 & threshold <2.5 ~ 2,
+    threshold >=2.5 & threshold <3.5 ~ 3,
+    threshold >=3.5 & threshold <4.5 ~ 4,
+    threshold >=4.5 & threshold <5.5 ~ 5,
+    threshold >=5.5 & threshold <6.5 ~ 6,
+    threshold >=6.5 & threshold <7.5 ~ 7,
+    threshold >=7.5 & threshold <8.5 ~ 8,
+    threshold >=8.5 & threshold <9.5 ~ 9,
+    threshold >=9.5 & threshold <10.5 ~ 10,
+    threshold >=10.5 ~ 11
   )
   )
-
-#  Multivariate regression
-
-qsofa_mv_reg <- glm(outcome_d28 ~ qsofa_fact + age_cat + sex + hiv_comb, family = "binomial", data = severity_data_cc_d28_reg)
-
-qsofa_mv_reg_tbl <- tbl_regression(qsofa_mv_reg, 
-               exponentiate = TRUE, 
-               pvalue_fun = ~style_pvalue(.x, digits = 2)
-  ) %>%
-    modify_cols_merge(
-    pattern = "{estimate} ({conf.low} - {conf.high})",
-    rows = !is.na(estimate)
-  ) %>%
-  modify_column_hide(columns = ci) %>%
-  add_global_p() %>%
-    modify_header(update = list(
-    label ~ "Variable",
-    estimate ~ "Adjusted OR (95% CI)",
-    p.value ~ "p-value"
-  )
-  )
-
-# counts
-
-qsofa_tbl_count <- severity_data_cc_d28_reg %>% 
-  select(qsofa_fact, age_cat, sex, hiv_comb, outcome_d28) %>% # keep only columns of interest
-  tbl_summary(     
-    by = outcome_d28,                                               # stratify entire table by outcome
-    percent = "row",
-    statistic = list(c(age_cat) ~ "{n} ({p}%)"),   # stats and format for categorical columns
-    digits = all_continuous() ~ 1,                              # rounding for continuous columns
-    type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
-) %>%
-  add_overall(statistic = ~"{n}") %>%
-      modify_header(update = list(
-    label ~ "Variable"
-  )
-  )
-qsofa_tbl_count$table_body$stat_0 <- (str_remove_all(qsofa_tbl_count$table_body$stat_0, "\\(100%\\)")
-)
-
-qsofa_reg_tbl <- tbl_merge(
-  tbls = list(qsofa_tbl_count, qsofa_uv_reg_tbl, qsofa_mv_reg_tbl)
-) %>%
-  modify_spanning_header(everything() ~ NA_character_) %>%
-  as_flex_table() %>%
-  flextable::fontsize(part = "header", size = 8) %>%
-  flextable::add_footer_lines("OR = Odds ratio, CI = Confidence intervals, Adjusted for age and gender") %>%
-  align_text_col(align = "center") %>%
-    bold(bold = TRUE, part = "header")
-
-
-
-qsofa_reg_tbl
 
 ```
 
 \newpage
-```{r, fig10_OR, fig.cap = "qSOFA Adjusted odds ratio plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+```{r, fig.cap = "UVA Receiver operating characteristic curve", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
-qsofa_mv_reg_plot <- qsofa_mv_reg %>%
-  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
-  mutate(across(where(is.numeric), round, digits = 2)) %>%
-  tibble()
 
-## remove the intercept term from your multivariable results
+uva_values_plot <- uva_values %>%
+  select(threshold_cat, threshold, specificity, specificity_1 = "1-specificity", sensitivity, specificity) %>%
+  # mutate(across(c(threshold, specificity, specificity_1, sensitivity)) %>%
+  mutate(label = paste0(threshold_cat, " ", "(", round(specificity, 1), ", ", round(sensitivity, 1), ")"))
 
-fig10 <- qsofa_mv_reg_plot %>% 
-    filter(str_detect(term, "qsofa_fact*") & 
-           term != "qsofa_fact11") %>% 
-  #set order of levels to appear along y-axis
-  mutate(term = fct_relevel(term,
-    "qsofa_fact1", "qsofa_fact2", "qsofa_fact3")
-    ) %>%
 
-  ggplot(aes(x = estimate, y = term)) +
-  geom_point(size = 3, shape=19) + 
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
-  geom_vline(xintercept = 1, linetype = "dashed") +
-  scale_x_log10(breaks = scales::log_breaks(8),
-                                limits = c(0.9, 800)
-) +
-  scale_y_discrete(limits = c("qsofa_fact3", "qsofa_fact2","qsofa_fact1"), 
-    labels = c("3", "2", "1")
-                   ) +
-  labs(caption = "", 
-       x = "",
-       y = "qSOFA score"
-       ) +
-  # coord_flip() +
-  theme_minimal()
+uva_values_plot <- uva_values_plot %>%
+  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
+  geom_line() +
+  geom_point() +
+  annotate("text", x = 50, y = 50, label = uva_auc_fig_text) +
+  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
+  #            hjust = 0, nudge_x = 3,
+  #            label.size = NA
+  #            ) +
+  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
+  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
 
-fig10
+uva_values_plot
+
+uva_values <- uva_values %>%
+  select(threshold_cat, specificity, sensitivity, npv, ppv) %>%
+  mutate(across(c(specificity, sensitivity, npv, ppv), ~round(.x, 2))
+         ) %>%
+  flextable()
+
+uva_values
 
 ```
+
+
 
 \newpage
-## All ORs 
-### Figure 3: Combined OR plot 
-
-```{r all_ORs_combined, fig.cap = "Odds ratio plots for A) MEWs, B) qSOFA, C) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 10, fig.height=7}
-
-combined_ors <- cowplot::plot_grid(fig9b, NULL, fig10, NULL, fig8a,
-                                   nrow = 5, 
-                                   rel_heights = c(2, -0.3, 2, -0.3, 2),
-                               labels = c('A', "", 'B', "" ,"C"), label_size = 10, align = "v", vjust = c(1.5, 0, 0, -1, 1.5)
-                               )
-
-combined_ors
-
-```
-### Figure 4: Combined ROC
-```{r all_rocs, fig.cap = "ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+### Figure 3: Combined ROC
+```{r, Fig3, fig.cap = "ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.  ", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
 
 uva_values_plot$layers[[4]] <- NULL
 
@@ -2719,7 +1842,9 @@ combined
 ```
 
 
-```{r HIV, include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+\newpage
+
+```{r delong_tests, include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 uva_v_qsofa <- roc.test(uva_auc, qsofa_auc, method = c("delong"))
 uva_v_qsofa_z <- as.numeric(uva_v_qsofa$statistic)
@@ -2765,9 +1890,6 @@ qsofa_hiv_v_mews_hiv <- roc.test(qsofa_hiv_auc, mews_hiv_auc, method = c("delong
 qsofa_hiv_v_mews_hiv_z <- as.numeric(qsofa_hiv_v_mews_hiv$statistic)
 qsofa_hiv_v_mews_hiv_p <- format(qsofa_hiv_v_mews_hiv$p.value, scientific = F)
 
-# UVA vs UVA age
-
-uva_v_uva_age <- roc.test(uva_auc, uva_age_auc, method = c("delong"))
 
 # AUC of UVA AUC v UVA_Age 82.0, 84.3 p = 0.005
 
@@ -2781,139 +1903,162 @@ DeLong test, a pairwise comparison test for the equality of the area under the c
 
 \newpage
 
-## ROCs for those aged 55 years and above
+## Supplementary material figures
+### Figure S1
+```{r, FigS1, fig.cap = "Box and whisker plot of time to death (days) by time to follow-up, by site among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe).", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 
-```{r all_rocs_old, fig.cap = "ROCs 55yrs and above for 1) MEWs, 2) qSOFA 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+time2death_country_fig <- ggplot(data = severity_data_cc_d28 %>% 
+                                   select(outcome_d28, country, time_to_death) %>%
+                                   mutate(country = if_else(country == "Laos", "Lao PDR", country)),
+                                   filter(outcome_d28 == "Dead"), 
+                                 mapping = aes(y = time_to_death, x = country, fill = country)) + 
+  geom_boxplot() + 
+  scale_x_discrete(name = "FIEBRE Site") +
+  scale_y_continuous(breaks = seq(0, 90, 10), limits = c(0, 90), name = "Time to death (days)") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "")    
 
-severity_data_cc_d28_old <- severity_data_cc_d28 %>%
-  filter(age >54)
+time2death_country_fig
+```
 
-# UVA 55+
-
-uva_auc_old <- pROC::roc(severity_data_cc_d28_old$outcome_d28, 
-           severity_data_cc_d28_old$uva, percent = T)
-
-uva_auc_value_old <- round(as.numeric(auc(uva_auc_old)[1])/100, 2)
-
-uva_values_old <- coords(roc = uva_auc_old, x = "all", transpose = FALSE, ret = "all")
-
-uva_auc_ci_old <- paste0("95% CI: ", round(pROC::ci.auc(uva_auc_old)[1]/100, 2), "-", round(ci.auc(uva_auc_old)[3]/100, 2))
-
-uva_auc_fig_text_old <- paste0("AUC = ", uva_auc_value_old, "\n", uva_auc_ci_old)
-
-uva_values_plot_old <- uva_values_old %>%
-  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
-  geom_line() +
-  geom_point() +
-  annotate("text", x = 50, y = 50, label = uva_auc_fig_text_old) +
-  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-  #            hjust = 0, nudge_x = 3,
-  #            label.size = NA
-  #            ) +
-  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
-  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
-
-# MEWS 55+
-
-mews_auc_old <- pROC::roc(severity_data_cc_d28_old$outcome_d28, 
-           severity_data_cc_d28_old$mews, percent = T)
-
-mews_auc_value_old <- round(as.numeric(auc(mews_auc_old)[1])/100, 2)
-
-mews_values_old <- coords(roc = mews_auc_old, x = "all", transpose = FALSE, ret = "all")
-
-mews_auc_ci_old <- paste0("95% CI: ", round(pROC::ci.auc(mews_auc_old)[1]/100, 2), "-", round(ci.auc(mews_auc_old)[3]/100, 2))
-
-mews_auc_fig_text_old <- paste0("AUC = ", mews_auc_value_old, "\n", mews_auc_ci_old)
-
-mews_values_plot_old <- mews_values_old %>%
-  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
-  geom_line() +
-  geom_point() +
-  annotate("text", x = 50, y = 50, label = mews_auc_fig_text_old) +
-  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-  #            hjust = 0, nudge_x = 3,
-  #            label.size = NA
-  #            ) +
-  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
-  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
-
-# qSOFA 55+
-
-qsofa_auc_old <- pROC::roc(severity_data_cc_d28_old$outcome_d28, 
-           severity_data_cc_d28_old$qsofa, percent = T)
-
-qsofa_auc_value_old <- round(as.numeric(auc(qsofa_auc_old)[1])/100, 2)
-
-qsofa_values_old <- coords(roc = qsofa_auc_old, x = "all", transpose = FALSE, ret = "all")
-
-qsofa_auc_ci_old <- paste0("95% CI: ", round(pROC::ci.auc(qsofa_auc_old)[1]/100, 2), "-", round(ci.auc(qsofa_auc_old)[3]/100, 2))
-
-qsofa_auc_fig_text_old <- paste0("AUC = ", qsofa_auc_value_old, "\n", qsofa_auc_ci_old)
-
-qsofa_values_plot_old <- qsofa_values_old %>%
-  ggplot(mapping = aes(x = specificity, y = sensitivity)) +
-  geom_line() +
-  geom_point() +
-  annotate("text", x = 50, y = 50, label = qsofa_auc_fig_text_old) +
-  # geom_label(aes(specificity +.5 , sensitivity + 0.5, label = label), 
-  #            hjust = 0, nudge_x = 3,
-  #            label.size = NA
-  #            ) +
-  scale_x_reverse("Specificity (%)", limits = c(100, 0),  breaks = scales::breaks_extended(10)) + 
-  scale_y_continuous("Sensitivity (%)", limits = c(0, 100), breaks = scales::breaks_extended(10)) 
+### Figure S2a
+```{r, eval=, echo=F, message=FALSE, warning=FALSE, fig.cap="Adjusted odds ratios for MEWS plot", include=T, paged.print=FALSE, results='asis', eval = T}
 
 
-uva_values_plot_old$layers[[4]] <- NULL
+mews_mv_reg_plot <- mews_mv_reg %>%
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
+  mutate(across(where(is.numeric), round, digits = 2)) %>%
+  tibble()
 
-uva_values_plot_old <- uva_values_plot_old +
-  ggtitle("UVA ROC (55yrs+)")
+## remove the intercept term from your multivariable results
 
-mews_values_plot_old$layers[[4]] <- NULL
+figS2a <- mews_mv_reg_plot %>% 
+    filter(str_detect(term, "mews_grouped_fact*")) %>% 
+     arrange((term)) %>%
 
-mews_values_plot_old <- mews_values_plot_old +
-  ggtitle("MEWS ROC (55yrs+)")
+  ggplot(aes(x = estimate, y = term)) +
+  geom_point(size = 3, shape=19) + 
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  scale_x_log10(name = "", 
+                breaks = scales::log_breaks(8), 
+                                limits = c(0.9, 800)
+) +
+  scale_y_discrete(name = "MEWS", 
+                   limits = c("mews_grouped_fact9", "mews_grouped_fact8", "mews_grouped_fact7", "mews_grouped_fact6", "mews_grouped_fact5", "mews_grouped_fact4", "mews_grouped_fact3", "mews_grouped_fact2"),
+                   # , 
+                   labels = c("9-11", "8", "7", "6", "5", "4", "3", "2")
+                   
+                   ) +
+  # scale_y_reverse() +
+  labs(caption = "") +
+  # scale_x_reverse() +
+  # coord_flip() +
+  theme_minimal()
 
-qsofa_values_plot_old$layers[[4]] <- NULL
+figS2a
 
-qsofa_values_plot_old <- qsofa_values_plot_old +
-  ggtitle("qSOFA ROC (55yrs+)")
-
-combined_old <- cowplot::plot_grid(mews_values_plot_old, qsofa_values_plot_old, uva_values_plot_old, ncol = 3, 
-                               labels = c('1', '2', "3"), label_size = 12, 
-                               align = "h")
-
-combined_old
 
 ```
 
-```{r, include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+### Figure S2b
 
-uva_v_qsofa_old <- roc.test(uva_auc_old, qsofa_auc_old, method = c("delong"))
-uva_v_qsofa_old_z <- as.numeric(uva_v_qsofa_old$statistic)
-uva_v_qsofa_old_p <- format(uva_v_qsofa_old$p.value, scientific = F)
 
-uva_v_mews_old <- roc.test(uva_auc_old, mews_auc_old, method = c("delong"))
-uva_v_mews_old_z <- as.numeric(uva_v_mews_old$statistic)
-uva_v_mews_old_p <- format(uva_v_mews_old$p.value, scientific = F)
+```{r, fig.cap = "qSOFA Adjusted odds ratio plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
-mews_v_qsofa_old <- roc.test(mews_auc_old, qsofa_auc_old, method = c("delong"))
-mews_v_qsofa_old_z <- as.numeric(mews_v_qsofa_old$statistic)
-mews_v_qsofa_old_p <- format(mews_v_qsofa_old$p.value, scientific = F)
+qsofa_mv_reg_plot <- qsofa_mv_reg %>%
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
+  mutate(across(where(is.numeric), round, digits = 2)) %>%
+  tibble()
+
+## remove the intercept term from your multivariable results
+
+figS2b <- qsofa_mv_reg_plot %>% 
+    filter(str_detect(term, "qsofa_fact*") & 
+           term != "qsofa_fact11") %>% 
+  #set order of levels to appear along y-axis
+  mutate(term = fct_relevel(term,
+    "qsofa_fact1", "qsofa_fact2", "qsofa_fact3")
+    ) %>%
+
+  ggplot(aes(x = estimate, y = term)) +
+  geom_point(size = 3, shape=19) + 
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  scale_x_log10(breaks = scales::log_breaks(8),
+                                limits = c(0.9, 800)
+) +
+  scale_y_discrete(limits = c("qsofa_fact3", "qsofa_fact2","qsofa_fact1"), 
+    labels = c("3", "2", "1")
+                   ) +
+  labs(caption = "", 
+       x = "",
+       y = "qSOFA score"
+       ) +
+  # coord_flip() +
+  theme_minimal()
+
+figS2b
 
 ```
 
-DeLong test, a pairwise comparison test for the equality of the area under the curve between for 55yrs and above.   
-  1) UVA (AUC: `r uva_auc_value_old`, `r uva_auc_ci_old`) vs. MEWS (AUC: `r mews_auc_value_old`,  `r mews_auc_ci_old`), Z = `r uva_v_qsofa_old_z`, *p-value* = `r uva_v_qsofa_old_p`.   
-  2) UVA (AUC: `r uva_auc_value_old`, `r uva_auc_ci_old`) vs. qSOFA (AUC: `r qsofa_auc_value_old`,  `r qsofa_auc_ci_old`), Z = `r uva_v_mews_old_z`, *p-value* = `r uva_v_mews_old_p`.   
-  3) MEWs (AUC: `r mews_auc_value_old`,  `r mews_auc_ci_old`) vs. qSOFA (AUC: `r qsofa_auc_value_old`,  `r qsofa_auc_ci_old`), Z = `r mews_v_qsofa_old_z`, *p-value* = `r mews_v_qsofa_old_p`.
-  
+### Figure S2c
+```{r, fig_s2c, fig.cap = "Adjusted odds ratios for UVA scores plot", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+
+uva_mv_reg_plot <- uva_mv_reg %>%
+  broom::tidy(exponentiate = TRUE, conf.int = TRUE) %>%
+  mutate(across(where(is.numeric), round, digits = 2)) %>%
+  tibble()
+
+## remove the intercept term from your multivariable results
+
+figS2c <- uva_mv_reg_plot %>% 
+    filter(str_detect(term, "uva_grouped_fact*")) %>% 
+
+  ggplot(aes(x = estimate, y = term)) +
+  geom_point(size = 3, shape=19) + 
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = .3) + 
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  scale_x_log10(name = "Adjusted odds ratio with 95% CI", 
+                breaks = scales::log_breaks(8),
+                limits = c(0.9, 800)
+                ) +
+  scale_y_discrete(name = "UVA score", 
+                   limits = c("uva_grouped_fact8", "uva_grouped_fact7", "uva_grouped_fact6", "uva_grouped_fact5", "uva_grouped_fact4", "uva_grouped_fact3", "uva_grouped_fact2", "uva_grouped_fact1"), 
+                   labels = c("8-10", "7", "6", "5", "4", "3", "2", "1")
+                   ) +
+  labs(caption = "") +
+  # coord_flip() +
+  theme_minimal()
+
+figS2c
+
+# Adjusted for age and gender. A UVA score of 8, also includes outcomes for scores 9 and 10
+
+```
+
+\newpage
+### Figure S2
+```{r, FigS2, fig.cap = "Adjusted odds ratios for a) MEWS, b) qSOFA and c) UVA severity scores predicting mortality at time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 10, fig.height=7}
+
+combined_ors <- cowplot::plot_grid(figS2a, NULL, figS2b, NULL, figS2c,
+                                   nrow = 5, 
+                                   rel_heights = c(2, -0.3, 2, -0.3, 2),
+                               labels = c('A', "", 'B', "" ,"C"), label_size = 10, align = "v", vjust = c(1.5, 0, 0, -1, 1.5)
+                               )
+
+combined_ors
+
+```
+
 \newpage
 
 ## Specificity (%) analysis   
 
-In this analysis we assume all those who are missing a day 28 outcome are either a) alive or b) dead and calculate AUC for each severity score.   
+In this analysis we assume all those who are missing a day 28 outcome are either a) alive or b) dead and calculate AUC for each severity score.
+
 
 ### a) Assume all missing are alive. 
 
@@ -3076,8 +2221,8 @@ DeLong test, a pairwise comparison test for the equality of the area under the c
   3) MEWs (AUC: `r mews_auc_value_s`,  `r mews_auc_ci_s`) vs. qSOFA (AUC: `r qsofa_auc_value_s`,  `r qsofa_auc_ci_s`), Z = `r mews_v_qsofa_alive_z`, *p-value* = `r mews_v_qsofa_alive_p`.
 
 \newpage
-### Figure S2
-```{r all_rocs_sensitivity_alive, fig.cap = "Specificity (%) analysis (a), assuming all missing are alive, ROCs for S1) UVA, S2) MEWS, S3) qSOFA ", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+### Figure S3
+```{r, FigS3, fig.cap = "Figure S3: Sensitivity analysis ROC curves assuming all cases with missing data survived by follow-up, for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
 
 
 
@@ -3202,22 +2347,6 @@ qsofa_values_plot_s_d <- qsofa_values_s_d %>%
 
 ```
 
-\newpage
-### Figure S3
-```{r all_rocs_sensitivity_dead, fig.cap = "Specificity (%) analysis (b), assuming all missing day 28 outcomes died, ROCs for S4) UVA, S5) MEWS, S6) qSOFA ", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
-
-
-
-
-combined_alive_s_d <- cowplot::plot_grid(mews_values_plot_s_d, qsofa_values_plot_s_d, uva_values_plot_s_d, ncol = 3, 
-                               labels = c('A', 'B', "C"), label_size = 12, 
-                               align = "h") 
-
-
-combined_alive_s_d  
-
-```
-
 ```{r, include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
 
 uva_v_qsofa_dead <- roc.test(uva_auc_s_d, qsofa_auc_s_d, method = c("delong"))
@@ -3240,46 +2369,25 @@ DeLong test, a pairwise comparison test for the equality of the area under the c
   3) MEWs (AUC: `r mews_auc_value_s_d`,  `r mews_auc_ci_s_d`) vs. qSOFA (AUC: `r qsofa_auc_value_s_d`,  `r qsofa_auc_ci_s_d`), Z = `r mews_v_qsofa_dead_z`, *p-value* = `r mews_v_qsofa_dead_p`.
 
 \newpage
-
-<!---BLOCK_LANDSCAPE_STOP--->
-
-
-
-\newpage
-
-```{r fig_los, fig.cap = "Length of inpatient stay (days) overall and by site", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
+### Figure S4
+```{r, FigS4, fig.cap = "Figure S4: Sensitivity analysis ROC curves assuming all cases with missing data died by follow-up, for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
 
 
-time2discharge_px_tbl <- severity_data_cc_d28 %>%
-  # filter(!is.na(time_to_discharge)) %>%
-  select(country, time_to_discharge) %>%
-  tbl_summary(
-    by = country,
-    type = list(all_dichotomous() ~ "categorical",
-                all_continuous() ~ "continuous2"
-                ),
-    statistic = list(c("time_to_discharge") ~ 
-                     c("{median} ({p25}, {p75})", "{min}, {max}")
-    ),
-    digits = all_continuous() ~ 1,
-    missing_text = "(Missing)"
-      ) %>%
-    add_overall() %>%
-    add_stat_label() %>%
-     modify_header(list(label ~"Variable")) %>%
-    as_flex_table() %>%
-      flextable::fontsize(part = "header", size = 8) %>%
-      flextable::autofit()
 
 
-time2discharge_px_tbl
+combined_alive_s_d <- cowplot::plot_grid(mews_values_plot_s_d, qsofa_values_plot_s_d, uva_values_plot_s_d, ncol = 3, 
+                               labels = c('A', 'B', "C"), label_size = 12, 
+                               align = "h") 
+
+
+combined_alive_s_d  
 
 ```
 
+
 \newpage
-<!---BLOCK_LANDSCAPE_START--->
-## Figure S4: ROCs for inpatients
-```{r all_rocs_inpatient, fig.cap = "ROCs among inpatients 1) MEWs, 2) qSOFA 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+## Figure S5: ROCs for inpatients
+```{r, FigS5, fig.cap = "Inpatient ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
 
 severity_data_cc_d28_inp <- severity_data_cc_d28 %>%
   mutate(px_group = as.character(px_group)) %>%
@@ -3405,11 +2513,10 @@ DeLong test, for inpatients.
   3) MEWs (AUC: `r mews_auc_value_inp`,  `r mews_auc_ci_inp`) vs. qSOFA (AUC: `r qsofa_auc_value_inp`,  `r qsofa_auc_ci_inp`), Z = `r mews_v_qsofa_inp_z`, *p-value* = `r mews_v_qsofa_inp_p`.
 
 
-  
 \newpage
-## Figure S5: ROCs for outpatients
+## Figure S6: ROCs for Outpatients
 
-```{r all_rocs_outpatients, fig.cap = "ROCs among outpatients for 1) MEWs, 2) qSOFA 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
+```{r, FigS6, fig.cap = "Outpatient ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 9, fig.height=6}
 
 severity_data_cc_d28_op <- severity_data_cc_d28 %>%
   mutate(px_group = as.character(px_group)) %>%
@@ -3536,23 +2643,14 @@ DeLong test, for outpatients.
   2) UVA (AUC: `r uva_auc_value_op`, `r uva_auc_ci_op`) vs. qSOFA (AUC: `r qsofa_auc_value_op`,  `r qsofa_auc_ci_op`), Z = `r mews_v_mews_inp_z`, *p-value* = `r mews_v_mews_inp_p`.   
   3) MEWs (AUC: `r mews_auc_value_op`,  `r mews_auc_ci_op`) vs. qSOFA (AUC: `r qsofa_auc_value_op`,  `r qsofa_auc_ci_op`), Z = `r qsofa_v_qsofa_inp_z`, *p-value* = `r qsofa_v_qsofa_inp_p`.
 
-
-
-
 \newpage
 
 
-
-
-## Figure S6: Laos ROCs
-```{r la_rocs, fig.cap = "Laos ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+## Figure S7: Laos ROCs
+```{r FigS7, fig.cap = "Lao PDR ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021. ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 severity_data_cc_d28_la <- severity_data_cc_d28 %>%
   filter(as.character(country) == "Laos")
-
-str(severity_data_cc_d28$outcome_d28)
-unique(severity_data_cc_d28$outcome_d28)
-
 
 # UVA Laos
 
@@ -3679,9 +2777,9 @@ DeLong test for Laos site;
   
 \newpage
 
-## Figure S7: Malawi ROCs
+## Figure S8: Malawi ROCs
 
-```{r mw_rocs, fig.cap = "Malawi ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+```{r, FigS8, fig.cap = " Malawi ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021. ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 severity_data_cc_d28_mw <- severity_data_cc_d28 %>%
   filter(as.character(country) == "Malawi")
@@ -3805,9 +2903,9 @@ DeLong test for Malawi site;
   
 \newpage
 
-## Figure S8: Mozambique ROCs
+## Figure S9: Mozambique ROCs
 
-```{r mz_rocs, fig.cap = "Mozambique ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+```{r, FigS9, fig.cap = "Mozambique ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021. ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 severity_data_cc_d28_mz <- severity_data_cc_d28 %>%
   filter(as.character(country) == "Mozambique")
@@ -3934,9 +3032,9 @@ DeLong test for Mozambique site;
   3) MEWs (AUC:`r mews_auc_value_mz`,  `r mews_auc_ci_mz`) vs. qSOFA (AUC:`r qsofa_auc_value_mz`,  `r qsofa_auc_ci_mz`), Z = `r mz_mews_v_qsofa_z`, *p-value* = `r mz_mews_v_qsofa_p`.   
 
 \newpage
-## Figure S9: Zimbabwe ROCs
+## Figure S10: Zimbabwe ROCs
 
-```{r zw_rocs, fig.cap = "Zimbabwe ROCs for 1) MEWs, 2) qSOFA, 3) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+```{r, FigS10, fig.cap = "Zimbabwe ROC curves for a) MEWS, b) qSOFA and c) UVA severity scores for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021. ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 severity_data_cc_d28_zw <- severity_data_cc_d28 %>%
   filter(as.character(country) == "Zimbabwe")
@@ -4064,9 +3162,9 @@ DeLong test for Zimbabwe site;
 
 
 \newpage
-## Figure S10: MEWS + HIV ROCs
+## Figure S11: MEWS + HIV ROCs
 
-```{r mews_hiv_roc, fig.cap = "MEWS ROCs for A) MEWS, B) MEWS HIV, C) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+```{r, FigS11, fig.cap = "ROC curves for A) MEWS, B) MEWS + HIV and C) UVA score for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, MEWS=modified early warning score, UVA=universal vital assessment score, CI=confidence interval. ", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 # MEWS HIV ROC
 
@@ -4114,9 +3212,9 @@ uva_v_mews_hiv_p <- format(uva_v_mews_hiv$p.value, scientific = F)
 
 \newpage
 
-## Figure S11: qSOFA + HIV ROCs
+## Figure S12: qSOFA + HIV ROCs
 
-```{r qsofa_hiv_roc, fig.cap = "qSOFA ROCs for A) qSOFA, B) qSOFA HIV, C) UVA", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
+```{r FigS12, fig.cap = "ROC curves for A) qSOFA, B) qSOFA + HIV and C) UVA score for predicting mortality by time of follow-up among febrile participants (aged ≥15 years) enrolled between 2018 and 2021 across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). ROC=receiver operating characteristic, AUC=area under the curve, qSOFA= quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence interval.", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T, fig.width = 8, fig.height=5}
 
 # qsofa HIV ROC
 
@@ -4153,9 +3251,14 @@ combined_qsofa_hiv
 
 ```
 
-## Table S4: All AUC results
 
-```{r, tab.cap = "ROC AUC values for complete data and senstivity analyses", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
+<!---BLOCK_LANDSCAPE_STOP--->
+
+\newpage
+
+## Table 5: All AUC results
+
+```{r, tab.cap = "Comparative performance of MEWS, qSOFA and UVA scores and subgroup analyses in predicting mortality at time of follow-up of participants (aged ≥15 years) across four sites (Lao PDR, Malawi, Mozambique, and Zimbabwe). AUC=Area under the curve, MEWS=modified early warning score, qSOFA=quick sequential organ failure assessment, UVA=universal vital assessment score, CI=confidence intervals. ", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T }
 
 
 score <- c('MEWS','qSOFA','UVA')
@@ -4231,13 +3334,6 @@ auc_all <- auc_all %>%
 
 
 
-# auc_all$complete_data <- sjlabelled::set_label(auc_all$complete_data, "Complete cases")
-# auc_all$sensitivity_alive <- sjlabelled::set_label(auc_all$sensitivity_alive, "Missing set to alive (a)")
-# auc_all$sensitivity_dead <- sjlabelled::set_label(auc_all$sensitivity_dead, "Missing set to dead (b)")
-
-# tbl_summary(auc_all)
-
-
 auc_all_tbl <- auc_all %>%
   flextable()  %>%
   # align()
@@ -4251,177 +3347,6 @@ auc_all_tbl
 # auc_all
 
 ```
-
-\newpage
-
-```{r flow_chart, fig.cap = "Flowchart of adult fever patients analysed", echo = F, message = F, fig.width=9, fig.height = 6}
-
-
-sample <- nrow(severity_data_cc_d28)
-
-
-miss1 <- severity_data %>%
-  mutate(outcome_d28 = as.character(outcome_d28)) %>%
-  filter(!is.na(outcome_d28)) %>%
-  filter(outcome_d28 == "lost to fup") %>%
-  nrow()
-
-
-miss_scores <- severity_data_v1 %>%
-    filter(if_any(c(modGCS, qsofa, uva, mews), ~ is.na(.))) %>%
-    nrow()
-
-
-miss3 <- miss_scores
-
-total_missing <- (miss1 + miss3)
-
-total_missing_p <- paste0(round(total_missing/total_px*100, 0), "%")
-
-     
-grid.newpage()
-
-
-org_cohort <- boxGrob(glue("Total number of participants (≥15 years) with fever enrolled",
-                           "n = {pop}",
-                           pop = txtInt(total_px),
-                           .sep = "\n"),
-                      x = .5,
-                      y = .8
-                      )
-
-included <- boxGrob(glue("Participants (≥15 years) with complete data analysed",
-                         "n = {sample}",
-                         sample = txtInt(sample),
-                         .sep = "\n"),
-                    x = .5, 
-                    y = .2
-                    )
-
-excluded <- boxGrob(glue("Excluded n = {total_missing} ({total_missing_p}):",
-                         " - Loss to follow-up: {miss1}",
-                         " - Missing severity score \n (UVA, MEWS, qSOFA): {miss3}",
-                         .sep = "\n"),
-                    just = "left"
-                    )
-
-
-
-# vert <- spreadVertical(org_cohort,
-#                        included
-#                        )
-
-excluded <- moveBox(excluded,
-                    x = 0.8,
-                    y = .5
-                    )
-
-
-org_cohort
-included
-excluded
-connectGrob(org_cohort, excluded, "L")
-connectGrob(org_cohort, included, type = "vert") 
-
-
-
-```
-
-## Figures - physiological signs 
-
-```{r fig_temperature, fig.cap = "Distribution of temperature", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-
-temp <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = temp)) +
-  geom_histogram( color='#e9ecef', alpha=0.8, bins = 50, boundary = 0, closed = "left") +
-  scale_x_continuous(breaks=seq(37.5, 43, 2)) +
-  facet_wrap(vars(country)) 
-
-temp
-
-
-```
-
-
-```{r fig_heart_rate, fig.cap = "Distribution of heart rate", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-# summary(severity_data_cc_d28$heart_rate)
-
-heart_rate <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = heart_rate)) +
-  geom_histogram( color='#e9ecef', alpha=0.8, bins = 50, boundary = 0, closed = "left") +
-  scale_x_continuous(breaks=seq(44, 192, 20)) +
-  facet_wrap(vars(country)) 
-
-heart_rate
-
-
-```
-
-```{r fig_respiratory_rate, fig.cap = "Distribution of respiratory rate", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-# summary(severity_data_cc_d28$respiratory_rate)
-
-respiratory_rate <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = respiratory_rate)) +
-  geom_histogram( color='#e9ecef', alpha=0.8, bins = 15, boundary = 0, closed = "left") +
-  scale_x_continuous(breaks=seq(10, 100, 5)) +
-  facet_wrap(vars(country)) 
-
-respiratory_rate
-
-
-```
-
-```{r fig_o2_sats, fig.cap = "Distribution of o2_sats", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = T}
-
-
-# summary(severity_data_cc_d28$o2_sats)
-
-o2_sats <- severity_data_cc_d28 %>%
-  ggplot(mapping = aes(x = o2_sats)) +
-  geom_histogram( color='#e9ecef', alpha=0.8, bins = 30, boundary = 0, closed = "left") +
-  scale_x_continuous(breaks=seq(20, 100, 20)) +
-  facet_wrap(vars(country)) 
-
-o2_sats
-
-
-```
-
-```{r age_death, fig.cap = "Distribution of patient outcomes by age", include = T, results = 'asis', echo = F, message = F, warning = F, paged.print = F, eval = F}
-
-fig3 <- ggplot(
-  data = severity_data_cc_d28, 
-  aes(y = age,           # numeric variable
-      x = outcome_d28)) +    # group variable
-  geom_violin(
-    aes(fill = outcome_d28), # fill (color of violin background)
-    color = "white",     # white outline
-    alpha = 0.2)+        # transparency
-  geom_sina(
-    size=1,                # Change the size of the jitter
-    aes(color = outcome_d28))+ # color (color of dots)
-  scale_fill_manual(       # Define fill for violin background by death/recover
-    values = c("Death" = "#bf5300", 
-              "Recover" = "#11118c")) + 
-  scale_color_manual(      # Define colours for points by death/recover
-    values = c("Death" = "#bf5300", 
-              "Recover" = "#11118c")) + 
-  theme_minimal() +                                # Remove the gray background
-  theme(legend.position = "none") +                # Remove unnecessary legend
-  labs(title = "") 
-
-fig3
-
-
-```
-
-<!---BLOCK_LANDSCAPE_STOP--->
 
 
 
