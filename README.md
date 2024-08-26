@@ -1,4 +1,4 @@
-10.5281/zenodo.13376619
+<a href="https://zenodo.org/doi/10.5281/zenodo.13376618"><img src="https://zenodo.org/badge/400505843.svg" alt="DOI"></a>
 
 ## Adult Severity Scores 
 A validation of several clinical severity scores using [FIEBRE](https://www.lshtm.ac.uk/research/centres-projects-groups/fiebre) data from 4 different countries. 
