@@ -5,11 +5,11 @@ A validation of several clinical severity scores using [FIEBRE](https://www.lsht
 
 This repository stores the R code, data, and full results published in the following article: 
 
-Predicting mortality in febrile adults: comparative performance of the MEWS, qSOFA, and UVA scores using prospectively collected data among patients in four health-care sites in Sub-Saharan Africa and South-eastern Asia. 
+#### Predicting mortality in febrile adults: comparative performance of the MEWS, qSOFA, and UVA scores using prospectively collected data among patients in four health-care sites in Sub-Saharan Africa and South-eastern Asia. 
 
 ### R code and data for fully reproducible analysis
 
-The R scripts in this repository can be used to fully replicate the analysis and results illustrated in the article. The code can be used to download the original data from [LSHTM's Data Compass] (https://datacompass.lshtm.ac.uk), and then run the `.Rmd` file.
+The R scripts in this repository can be used to fully replicate the analysis and results illustrated in the article. The code can be used to download the original data from [LSHTM's Data Compass](https://datacompass.lshtm.ac.uk), and then run the `.Rmd` file.
 
   * Rmd (R markdown file) to reproduce the analyses is available in the `Rmd_script` folder. 
 
