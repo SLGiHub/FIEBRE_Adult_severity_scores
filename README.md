@@ -7,7 +7,8 @@ A validation of several clinical severity scores using [FIEBRE](https://www.lsht
 
 This repository stores the R code, data, and full results published in the following article: 
 
-#### Predicting mortality in febrile adults: comparative performance of the MEWS, qSOFA, and UVA scores using prospectively collected data among patients in four health-care sites in Sub-Saharan Africa and South-eastern Asia. 
+#### [Predicting mortality in febrile adults: comparative performance of the MEWS, qSOFA, and UVA scores using prospectively collected data among patients in four health-care sites in Sub-Saharan Africa and South-eastern Asia.](https://doi.org/10.1016/j.eclinm.2024.102856)
+
 
 ### R code and data for fully reproducible analysis
 
